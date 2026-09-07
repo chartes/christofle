@@ -87,92 +87,46 @@
     </section>
   </xsl:template>
 
-  <!--
-    Mois = <group type="month" xml:id="mois-NN"><head>janvier</head><text minute-…>.
-    L'ELEC proposait un drill mois -> jours -> notes. Le front dots-vue rend le mois
-    en excludeFragments : les <text minute-…> enfants sont EXCLUS du wrapper (seul
-    le <head> arrive), et le ToC (profondeur 2) ne descend pas jusqu'aux notes ->
-    aucune navigation vers les 50 minutes du mois. On restitue donc, sur la page du
-    mois, un INDEX des notes GROUPÉES PAR JOUR (déduites de docDate/date/@when),
-    chaque note = un lien vers son fragment (?refId=minute-NNN).
-
-    Comme les minutes sont absentes du wrapper, on lit la source complète via
-    document('christofle.xml'). Ce side-car est donc une dépendance de déploiement
-    de cette surcharge et doit rester à côté de la XSL. Pur XSL, aucun script,
-    aucun JS.
-  -->
-  <xsl:variable name="chr-full" select="document('christofle.xml')"/>
-
-  <!-- Clé pour grouper les minutes par nature juridique (index des types d'actes).
-       Utilisée dans le contexte de $chr-full (document secondaire). -->
-  <xsl:key name="minByType"
-           match="tei:text[starts-with(@xml:id, 'minute-')]"
-           use="normalize-space((tei:front/tei:index/tei:term[@type = 'natureJuridique'])[1])"/>
-
-  <!-- RefId DoTS de la page parent « Index des lieux et personnes ».
-       Centralisé ici car cet identifiant est auto-généré et doit être revérifié
-       après une ré-ingestion de la ressource. -->
+  <!-- Index précalculés dans data/christofle.xml par scripts/build_indexes.py.
+       Ils restent disponibles dans les fragments DoTS, sans document secondaire. -->
   <xsl:variable name="christofle-index-refid" select="'r65205'"/>
 
-  <!-- INDEX DES TYPES D'ACTES = fragment citeStructure (comme l'ELEC
-       christofle/index-des-types-d-actes.html), et non plus un composant Vue.
-       La coquille <div type="index-types-actes"> (dans le <back>) est remplie ici :
-       on lit toutes les minutes via document('christofle.xml'), on les groupe par
-       <term type="natureJuridique"> (Muenchian), types triés alphabétiquement,
-       actes triés par numéro et liés à leur fragment (?refId=minute-NNN). -->
   <xsl:template match="tei:div[@type = 'index-types-actes']" priority="12">
     <section class="chr-types christofle-index">
       <h2><xsl:value-of select="normalize-space(tei:head)"/></h2>
-      <xsl:for-each select="$chr-full">
-        <xsl:variable name="minutes" select="//tei:text[starts-with(@xml:id, 'minute-')]"/>
-        <p class="chr-types-intro">
-          <xsl:value-of select="count($minutes[normalize-space((tei:front/tei:index/tei:term[@type = 'natureJuridique'])[1]) != ''])"/>
-          <xsl:text> actes classés par nature juridique.</xsl:text>
-        </p>
-        <xsl:for-each select="$minutes[normalize-space((tei:front/tei:index/tei:term[@type = 'natureJuridique'])[1]) != ''][generate-id() = generate-id(key('minByType', normalize-space((tei:front/tei:index/tei:term[@type = 'natureJuridique'])[1]))[1])]">
-          <xsl:sort select="normalize-space((tei:front/tei:index/tei:term[@type = 'natureJuridique'])[1])"/>
-          <xsl:variable name="type" select="normalize-space((tei:front/tei:index/tei:term[@type = 'natureJuridique'])[1])"/>
-          <div class="chr-type">
-            <h3 class="chr-type-head">
-              <xsl:value-of select="$type"/>
-              <xsl:text> </xsl:text>
-              <span class="chr-type-count">(<xsl:value-of select="count(key('minByType', $type))"/>)</span>
-            </h3>
-            <ul class="chr-acte-list">
-              <xsl:for-each select="key('minByType', $type)">
-                <xsl:sort select="number(tei:front/tei:docTitle/tei:titlePart[@type = 'number'])" data-type="number"/>
-                <li>
-                  <a href="/christofle/document/christofle_1437?refId={@xml:id}">
-                    <xsl:value-of select="tei:front/tei:docTitle/tei:titlePart[@type = 'number']"/>
-                  </a>
-                </li>
-              </xsl:for-each>
-            </ul>
-          </div>
-        </xsl:for-each>
+      <p class="chr-types-intro"><xsl:value-of select="count(tei:list[@type='act-types']/tei:item/tei:list/tei:item)"/><xsl:text> actes classés par nature juridique.</xsl:text></p>
+      <xsl:for-each select="tei:list[@type='act-types']/tei:item">
+        <xsl:sort select="tei:label"/>
+        <div class="chr-type">
+          <h3 class="chr-type-head"><xsl:value-of select="tei:label"/><xsl:text> </xsl:text><span class="chr-type-count">(<xsl:value-of select="count(tei:list/tei:item)"/>)</span></h3>
+          <ul class="chr-acte-list">
+            <xsl:for-each select="tei:list/tei:item/tei:ref">
+              <xsl:sort select="number(.)" data-type="number"/>
+              <li><a href="/christofle/document/christofle_1437?refId={substring-after(@target, '#')}"><xsl:value-of select="."/></a></li>
+            </xsl:for-each>
+          </ul>
+        </div>
       </xsl:for-each>
     </section>
   </xsl:template>
 
-  <!-- Wrapper de fragment SANS teiHeader. Cas particulier : la page d'un MOIS
-       arrive en excludeFragments, réduite à <head>NOM_DU_MOIS</head> (les minutes,
-       unités citables, sont retirées). On identifie le mois par son intitulé
-       (unique) dans la source complète document('christofle.xml') et on rend
-       l'index des notes groupées par jour. Tous les autres fragments : rendu
-       par défaut (apply-templates), identique à la générique. -->
   <xsl:template match="*[local-name() = 'wrapper'][not(tei:teiHeader)]" priority="12">
-    <xsl:variable name="headtext" select="normalize-space(tei:head[1])"/>
-    <xsl:variable name="month" select="$chr-full//tei:group[@type = 'month'][normalize-space(tei:head) = $headtext]"/>
     <xsl:choose>
-      <xsl:when test="$headtext != '' and $month and not(tei:text) and not(tei:div) and not(tei:group) and not(tei:p)">
-        <xsl:call-template name="christofle-month-index">
-          <xsl:with-param name="month" select="$month"/>
-        </xsl:call-template>
+      <xsl:when test="tei:argument[@type='month-index']">
+        <xsl:apply-templates select="tei:argument[@type='month-index']"/>
       </xsl:when>
-      <xsl:otherwise>
-        <xsl:apply-templates/>
-      </xsl:otherwise>
+      <xsl:otherwise><xsl:apply-templates/></xsl:otherwise>
     </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="tei:group[@type='month'][tei:argument[@type='month-index']]" priority="12">
+    <xsl:apply-templates select="tei:argument[@type='month-index']"/>
+  </xsl:template>
+
+  <xsl:template match="tei:argument[@type='month-index']" priority="12">
+    <xsl:call-template name="christofle-month-index">
+      <xsl:with-param name="month" select="."/>
+    </xsl:call-template>
   </xsl:template>
 
   <!-- Lien de téléchargement de l'édition (<ref target="telechargement/…zip">) :
@@ -200,8 +154,8 @@
        Chaque note est liée à son fragment (?refId=minute-NNN). -->
   <xsl:template name="christofle-month-index">
     <xsl:param name="month"/>
-    <xsl:variable name="mid" select="$month/@xml:id"/>
-    <xsl:variable name="minutes" select="$month/tei:text[starts-with(@xml:id, 'minute-')]"/>
+    <xsl:variable name="mid" select="substring-after($month/@corresp, '#')"/>
+    <xsl:variable name="minutes" select="$month/tei:list/tei:item"/>
     <section class="christofle-mois" id="{$mid}">
       <h2 class="mois-head"><xsl:value-of select="normalize-space($month/tei:head)"/></h2>
       <p class="mois-intro"><xsl:value-of select="count($minutes)"/> actes. Filtrez par jour ou cliquez un acte pour le consulter.</p>
@@ -213,9 +167,9 @@
         <span class="jours-label">Jours :</span>
         <label class="jour-link jour-all" for="jf-{$mid}-all">Tous</label>
         <xsl:for-each select="$minutes">
-          <xsl:variable name="when" select="tei:front/tei:docDate/tei:date/@when"/>
-          <xsl:if test="not(preceding-sibling::tei:text[tei:front/tei:docDate/tei:date/@when = $when])">
-            <label class="jour-link" for="jf-{$mid}-{$when}" title="{normalize-space(tei:front/tei:docDate/tei:date)}">
+          <xsl:variable name="when" select="tei:date/@when"/>
+          <xsl:if test="not(preceding-sibling::tei:item[tei:date/@when = $when])">
+            <label class="jour-link" for="jf-{$mid}-{$when}" title="{normalize-space(tei:date)}">
               <xsl:value-of select="number(substring($when, 9))"/>
             </label>
           </xsl:if>
@@ -224,20 +178,20 @@
 
       <div class="jours-index">
         <xsl:for-each select="$minutes">
-          <xsl:variable name="when" select="tei:front/tei:docDate/tei:date/@when"/>
+          <xsl:variable name="when" select="tei:date/@when"/>
           <!-- une section par jour (au premier acte de la journée), englobant tous ses actes -->
-          <xsl:if test="not(preceding-sibling::tei:text[tei:front/tei:docDate/tei:date/@when = $when])">
+          <xsl:if test="not(preceding-sibling::tei:item[tei:date/@when = $when])">
             <section class="jour-group jg-{$when}" id="jour-{$when}">
               <input type="radio" name="jf-{$mid}" id="jf-{$mid}-{$when}" class="jf-radio"/>
-              <h3 class="jour-head"><xsl:value-of select="normalize-space(tei:front/tei:docDate/tei:date)"/></h3>
-              <xsl:for-each select="$minutes[tei:front/tei:docDate/tei:date/@when = $when]">
+              <h3 class="jour-head"><xsl:value-of select="normalize-space(tei:date)"/></h3>
+              <xsl:for-each select="$minutes[tei:date/@when = $when]">
                 <div class="jour-note">
-                  <a class="internalLink note-link" href="/christofle/document/christofle_1437?refId={@xml:id}">
-                    <span class="note-num"><xsl:value-of select="tei:front/tei:docTitle/tei:titlePart[@type = 'number']"/>.</span>
+                  <a class="internalLink note-link" href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                    <span class="note-num"><xsl:value-of select="tei:ref"/>.</span>
                     <xsl:text> </xsl:text>
-                    <xsl:variable name="nature" select="normalize-space(tei:front/tei:index/tei:term[@type = 'natureJuridique'][1])"/>
+                    <xsl:variable name="nature" select="normalize-space(tei:term[@type = 'natureJuridique'][1])"/>
                     <xsl:if test="$nature != ''"><span class="note-type"><xsl:value-of select="$nature"/></span><xsl:text> — </xsl:text></xsl:if>
-                    <span class="note-summary"><xsl:value-of select="normalize-space(tei:front/tei:div[@type = 'summary']/tei:p)"/></span>
+                    <span class="note-summary"><xsl:value-of select="normalize-space(tei:seg[@type = 'summary'])"/></span>
                   </a>
                 </div>
               </xsl:for-each>
