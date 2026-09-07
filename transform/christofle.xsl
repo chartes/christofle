@@ -101,7 +101,14 @@
         <xsl:sort select="tei:label"/>
         <article class="chr-type">
           <h3 class="chr-type-head">
-            <xsl:value-of select="normalize-space(tei:label)"/>
+            <!-- L'ÉLEC affiche « Accord », « Contrat d'apprentissage » : seule la
+                 première lettre est capitalisée. text-transform:capitalize en CSS
+                 donnerait « Contrat D'apprentissage », d'où la bascule ici. -->
+            <xsl:variable name="label" select="normalize-space(tei:label)"/>
+            <xsl:value-of select="translate(substring($label, 1, 1),
+              'abcdefghijklmnopqrstuvwxyzàâäéèêëîïôöùûüç',
+              'ABCDEFGHIJKLMNOPQRSTUVWXYZÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ')"/>
+            <xsl:value-of select="substring($label, 2)"/>
             <span class="chr-type-count">
               <xsl:text> (</xsl:text>
               <xsl:value-of select="count(tei:list/tei:item/tei:ref)"/>
@@ -139,8 +146,112 @@
       <xsl:when test="tei:argument[@type='month-index']">
         <xsl:apply-templates select="tei:argument[@type='month-index']"/>
       </xsl:when>
+      <xsl:when test="tei:argument[@type='intro-index']">
+        <xsl:apply-templates select="tei:argument[@type='intro-index']"/>
+      </xsl:when>
+      <xsl:when test="tei:argument[@type='notes-index']">
+        <xsl:apply-templates select="tei:argument[@type='notes-index']"/>
+      </xsl:when>
       <xsl:otherwise><xsl:apply-templates/></xsl:otherwise>
     </xsl:choose>
+  </xsl:template>
+
+  <!-- Barre de navigation d'une note, reprise de l'ÉLEC (#months-list puis
+       #days-list de notes/note-001.html) : les douze mois, puis les jours du
+       mois courant. Précalculée par build_indexes.py dans chaque minute, donc
+       disponible même quand le fragment est servi seul. Aucun JavaScript. -->
+  <xsl:template match="tei:argument[@type = 'note-nav']" priority="12">
+    <nav class="christofle-note-nav" aria-label="Navigation par mois et par jour">
+      <xsl:for-each select="tei:list">
+        <ul>
+          <xsl:attribute name="class">
+            <xsl:choose>
+              <xsl:when test="@type = 'months'">months-list</xsl:when>
+              <xsl:otherwise>days-list</xsl:otherwise>
+            </xsl:choose>
+          </xsl:attribute>
+          <xsl:for-each select="tei:item">
+            <li>
+              <xsl:if test="tei:ref/@ana = 'selected'">
+                <xsl:attribute name="class">selected</xsl:attribute>
+              </xsl:if>
+              <a class="internalLink"
+                 href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                <xsl:choose>
+                  <!-- barre des jours : le quantième suffit, le mois est au-dessus -->
+                  <xsl:when test="tei:ref/@type = 'day'">
+                    <xsl:value-of select="number(substring(tei:ref/@n, 9))"/>
+                  </xsl:when>
+                  <xsl:otherwise><xsl:value-of select="normalize-space(tei:ref)"/></xsl:otherwise>
+                </xsl:choose>
+              </a>
+            </li>
+          </xsl:for-each>
+        </ul>
+      </xsl:for-each>
+    </nav>
+  </xsl:template>
+
+  <!-- « Édition des notes » : sommaire des douze mois, chacun avec son nombre
+       d'actes et les jours représentés. L'index est précalculé dans le TEI
+       (build_indexes.py) et porté par un <argument>, enfant direct du <group> :
+       il survit donc à excludeFragments. Reproduit la double navigation de
+       l'ÉLEC (#months-list puis #days-list), sans JavaScript. -->
+  <xsl:template match="tei:group[tei:argument[@type = 'notes-index']]" priority="12">
+    <xsl:apply-templates select="tei:argument[@type = 'notes-index']"/>
+  </xsl:template>
+
+  <xsl:template match="tei:argument[@type = 'notes-index']" priority="12">
+    <section class="christofle-notes-index">
+      <h1>Édition des notes</h1>
+      <p class="notes-intro">Choisissez un mois, puis un jour.</p>
+      <ul class="months-list">
+        <xsl:for-each select="tei:list/tei:item">
+          <li class="month-item">
+            <a class="internalLink month-link"
+               href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+              <xsl:value-of select="normalize-space(tei:ref)"/>
+            </a>
+            <span class="month-count"> (<xsl:value-of select="tei:num"/>)</span>
+            <ul class="days-list">
+              <xsl:for-each select="tei:list[@type = 'days']/tei:item">
+                <li>
+                  <a class="internalLink day-link"
+                     href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                    <xsl:value-of select="number(substring(tei:ref/@n, 9))"/>
+                  </a>
+                </li>
+              </xsl:for-each>
+            </ul>
+          </li>
+        </xsl:for-each>
+      </ul>
+    </section>
+  </xsl:template>
+
+  <!-- Introduction : sommaire de ses parties. Comme pour les mois, l'index est
+       précalculé dans le TEI (build_indexes.py) et porté par un <argument>,
+       enfant direct du <div> : il survit donc à excludeFragments, alors que les
+       parties elles-mêmes, unités citables, sont retirées du fragment. -->
+  <xsl:template match="tei:div[@xml:id = 'introduction'][tei:argument[@type = 'intro-index']]" priority="12">
+    <xsl:apply-templates select="tei:argument[@type = 'intro-index']"/>
+  </xsl:template>
+
+  <!-- L'ÉLEC n'a pas de page d'accueil d'introduction : son entrée de menu mène
+       à introduction/partie-1.html, titrée « Introduction > Le notaire ». On rend
+       donc ici la première partie, dont build_indexes.py a placé une copie dans
+       l'<argument> — les parties elles-mêmes, unités citables, sont retirées du
+       fragment servi. La liste tei:list reste disponible dans le TEI si un
+       sommaire devait être réintroduit. -->
+  <xsl:template match="tei:argument[@type = 'intro-index']" priority="12">
+    <section class="christofle-intro">
+      <h1 class="intro-head">
+        <xsl:value-of select="normalize-space(tei:head)"/>
+        <xsl:text> &gt; </xsl:text>
+        <xsl:value-of select="normalize-space(tei:div[@type = 'first-part']/tei:head)"/>
+      </h1>
+      <xsl:apply-templates select="tei:div[@type = 'first-part']/node()[not(self::tei:head)]"/>
+    </section>
   </xsl:template>
 
   <xsl:template match="tei:group[@type='month'][tei:argument[@type='month-index']]" priority="12">
@@ -222,6 +333,7 @@
   </xsl:template>
 
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]" priority="10">
+    <xsl:apply-templates select="tei:argument[@type = 'note-nav']"/>
     <article id="{@xml:id}" class="christofle-minute">
       <header class="recordMetadata">
         <h2>
