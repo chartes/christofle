@@ -92,21 +92,22 @@
   <xsl:variable name="christofle-index-refid" select="'r65205'"/>
 
   <xsl:template match="tei:div[@type = 'index-types-actes']" priority="12">
-    <section class="chr-types christofle-index">
-      <h2><xsl:value-of select="normalize-space(tei:head)"/></h2>
-      <p class="chr-types-intro"><xsl:value-of select="count(tei:list[@type='act-types']/tei:item/tei:list/tei:item)"/><xsl:text> actes classés par nature juridique.</xsl:text></p>
+    <section class="actTypes">
+      <section>
+      <h1><xsl:value-of select="normalize-space(tei:head)"/></h1>
       <xsl:for-each select="tei:list[@type='act-types']/tei:item">
         <xsl:sort select="tei:label"/>
-        <div class="chr-type">
-          <h3 class="chr-type-head"><xsl:value-of select="tei:label"/><xsl:text> </xsl:text><span class="chr-type-count">(<xsl:value-of select="count(tei:list/tei:item)"/>)</span></h3>
-          <ul class="chr-acte-list">
+        <article>
+          <span class="index-entry"><span class="actType-entry"><xsl:value-of select="concat(translate(substring(normalize-space(tei:label), 1, 1), 'abcdefghijklmnopqrstuvwxyzàâäéèêëîïôöùûüç', 'ABCDEFGHIJKLMNOPQRSTUVWXYZÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ'), substring(normalize-space(tei:label), 2))"/></span></span>
+          <span class="index-refs"><xsl:text> : </xsl:text>
             <xsl:for-each select="tei:list/tei:item/tei:ref">
               <xsl:sort select="number(.)" data-type="number"/>
-              <li><a href="/christofle/document/christofle_1437?refId={substring-after(@target, '#')}"><xsl:value-of select="."/></a></li>
+              <a title="Consulter la note" class="internalLink" href="/christofle/document/christofle_1437?refId={substring-after(@target, '#')}"><xsl:value-of select="."/></a><xsl:text> (</xsl:text><xsl:value-of select="../tei:date"/><xsl:text>)</xsl:text><xsl:if test="position() != last()"><xsl:text> ; </xsl:text></xsl:if>
             </xsl:for-each>
-          </ul>
-        </div>
+          </span>
+        </article>
       </xsl:for-each>
+      </section>
     </section>
   </xsl:template>
 

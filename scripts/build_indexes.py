@@ -36,6 +36,11 @@ def enrich(root):
         for m in sorted(acts, key=lambda m: int(text(m, 't:front/t:docTitle/t:titlePart[@type="number"]'))):
             entry = node('item')
             entry.append(node('ref', text(m, 't:front/t:docTitle/t:titlePart[@type="number"]'), target='#' + m.get(XML_ID), type='act'))
+            date = m.find('t:front/t:docDate/t:date', NS)
+            assert date is not None and date.get('when'), 'Missing act date'
+            # The historical types index shows the day and month, not the year.
+            date_text = ' '.join(''.join(date.itertext()).split()).split(',', 1)[-1].strip()
+            entry.append(node('date', date_text, when=date.get('when')))
             links.append(entry)
         item.append(links)
         listing.append(item)
