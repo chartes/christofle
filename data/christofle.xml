@@ -173,7 +173,7 @@
                   </citeStructure>
                </citeStructure>
             </citeStructure>
-            <citeStructure match="/TEI[1]/text[1]/back[1]/div[@type='indexes']" use="default" unit="Index des lieux et personnes">
+            <citeStructure match="/TEI[1]/text[1]/back[1]/div[@type='indexes']" use="@xml:id" unit="Index des lieux et personnes">
                
             </citeStructure>
          <tei:citeStructure xmlns:tei="http://www.tei-c.org/ns/1.0" unit="Index des types d'actes" match="/TEI[1]/text[1]/back[1]/div[@type='index-types-actes']" use="@xml:id"><tei:citeData property="dct:title" use="normalize-space(string((head)[1]))"/></tei:citeStructure></refsDecl>
