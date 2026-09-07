@@ -88,29 +88,52 @@
   </xsl:template>
 
   <!-- Index précalculés dans data/christofle.xml par scripts/build_indexes.py.
-       Ils restent disponibles dans les fragments DoTS, sans document secondaire. -->
+       Ils restent disponibles dans les fragments DoTS, sans composant Vue spécifique. -->
   <xsl:variable name="christofle-index-refid" select="'r65205'"/>
 
+  <!-- Index des types d'actes : vrai fragment TEI/DTS. -->
   <xsl:template match="tei:div[@type = 'index-types-actes']" priority="12">
-    <section class="actTypes">
-      <section>
+    <section class="chr-types" id="{@xml:id}">
       <h1><xsl:value-of select="normalize-space(tei:head)"/></h1>
+      <p class="chr-types-intro">L’index renvoie au numéro de la transaction.</p>
+
       <xsl:for-each select="tei:list[@type='act-types']/tei:item">
         <xsl:sort select="tei:label"/>
-        <article>
-          <span class="index-entry"><span class="actType-entry"><xsl:value-of select="concat(translate(substring(normalize-space(tei:label), 1, 1), 'abcdefghijklmnopqrstuvwxyzàâäéèêëîïôöùûüç', 'ABCDEFGHIJKLMNOPQRSTUVWXYZÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ'), substring(normalize-space(tei:label), 2))"/></span></span>
-          <span class="index-refs"><xsl:text> : </xsl:text>
-            <xsl:for-each select="tei:list/tei:item/tei:ref">
-              <xsl:sort select="number(.)" data-type="number"/>
-              <a title="Consulter la note" class="internalLink" href="/christofle/document/christofle_1437?refId={substring-after(@target, '#')}"><xsl:value-of select="."/></a><xsl:text> (</xsl:text><xsl:value-of select="../tei:date"/><xsl:text>)</xsl:text><xsl:if test="position() != last()"><xsl:text> ; </xsl:text></xsl:if>
+        <article class="chr-type">
+          <h3 class="chr-type-head">
+            <xsl:value-of select="normalize-space(tei:label)"/>
+            <span class="chr-type-count">
+              <xsl:text> (</xsl:text>
+              <xsl:value-of select="count(tei:list/tei:item/tei:ref)"/>
+              <xsl:text>)</xsl:text>
+            </span>
+          </h3>
+
+          <ul class="chr-acte-list">
+            <xsl:for-each select="tei:list/tei:item">
+              <xsl:sort select="number(tei:ref)" data-type="number"/>
+              <li>
+                <a title="Consulter la note"
+                   class="internalLink"
+                   href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                  <xsl:value-of select="tei:ref"/>
+                </a>
+                <xsl:if test="tei:date">
+                  <span class="chr-acte-date">
+                    <xsl:text> (</xsl:text>
+                    <xsl:value-of select="tei:date"/>
+                    <xsl:text>)</xsl:text>
+                  </span>
+                </xsl:if>
+              </li>
             </xsl:for-each>
-          </span>
+          </ul>
         </article>
       </xsl:for-each>
-      </section>
     </section>
   </xsl:template>
 
+  <!-- Les mois utilisent l'argument TEI précalculé dans data/christofle.xml. -->
   <xsl:template match="*[local-name() = 'wrapper'][not(tei:teiHeader)]" priority="12">
     <xsl:choose>
       <xsl:when test="tei:argument[@type='month-index']">
@@ -130,10 +153,7 @@
     </xsl:call-template>
   </xsl:template>
 
-  <!-- Lien de téléchargement de l'édition (<ref target="telechargement/…zip">) :
-       on ne sert pas le zip historique ; on pointe vers l'EXPORT TEI live DoTS
-       (source toujours à jour). Chemin relatif /api/dts (même origine que le front
-       en production ; en dev sans proxy, viser http://127.0.0.1:8080/api/dts). -->
+  <!-- Lien de téléchargement de l'édition : export TEI live DoTS. -->
   <xsl:template match="tei:ref[starts-with(@target, 'telechargement')]" priority="12">
     <a class="christofle-download" download="christofle_1437.xml"
        href="/api/dts/document?resource=christofle_1437&amp;mediaType=xml">
@@ -146,13 +166,9 @@
     <a class="externalLink" href="{@target}" target="_blank" rel="noopener"><xsl:apply-templates/></a>
   </xsl:template>
 
-  <!-- Index d'un mois : FILTRE PAR JOUR sans JS et sans <style> (le front retire
-       les <style> injectés). Corrélation GÉNÉRIQUE via :has() (règle unique en
-       CSS statique) : chaque <input type="radio"> (même name) vit DANS son
-       .jour-group ; les <label for> de la barre les cochent à distance. Un jour
-       coché -> .jours-index masque les groupes sans radio coché. « Tous » est un
-       radio placé HORS de .jours-index : coché, aucun groupe n'est masqué.
-       Chaque note est liée à son fragment (?refId=minute-NNN). -->
+  <!-- Index d'un mois : filtre par jour sans JS.
+       $month est ici <argument type="month-index"> et contient une liste
+       précalculée de toutes les minutes du mois. -->
   <xsl:template name="christofle-month-index">
     <xsl:param name="month"/>
     <xsl:variable name="mid" select="substring-after($month/@corresp, '#')"/>
@@ -161,7 +177,6 @@
       <h2 class="mois-head"><xsl:value-of select="normalize-space($month/tei:head)"/></h2>
       <p class="mois-intro"><xsl:value-of select="count($minutes)"/> actes. Filtrez par jour ou cliquez un acte pour le consulter.</p>
 
-      <!-- radio « Tous » : HORS de .jours-index, coché par défaut -->
       <input type="radio" name="jf-{$mid}" id="jf-{$mid}-all" class="jf-radio" checked="checked"/>
 
       <nav class="jours-nav" aria-label="Filtrer par jour">
@@ -180,18 +195,21 @@
       <div class="jours-index">
         <xsl:for-each select="$minutes">
           <xsl:variable name="when" select="tei:date/@when"/>
-          <!-- une section par jour (au premier acte de la journée), englobant tous ses actes -->
           <xsl:if test="not(preceding-sibling::tei:item[tei:date/@when = $when])">
             <section class="jour-group jg-{$when}" id="jour-{$when}">
               <input type="radio" name="jf-{$mid}" id="jf-{$mid}-{$when}" class="jf-radio"/>
               <h3 class="jour-head"><xsl:value-of select="normalize-space(tei:date)"/></h3>
               <xsl:for-each select="$minutes[tei:date/@when = $when]">
                 <div class="jour-note">
-                  <a class="internalLink note-link" href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                  <a class="internalLink note-link"
+                     href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                     <span class="note-num"><xsl:value-of select="tei:ref"/>.</span>
                     <xsl:text> </xsl:text>
                     <xsl:variable name="nature" select="normalize-space(tei:term[@type = 'natureJuridique'][1])"/>
-                    <xsl:if test="$nature != ''"><span class="note-type"><xsl:value-of select="$nature"/></span><xsl:text> — </xsl:text></xsl:if>
+                    <xsl:if test="$nature != ''">
+                      <span class="note-type"><xsl:value-of select="$nature"/></span>
+                      <xsl:text> — </xsl:text>
+                    </xsl:if>
                     <span class="note-summary"><xsl:value-of select="normalize-space(tei:seg[@type = 'summary'])"/></span>
                   </a>
                 </div>
