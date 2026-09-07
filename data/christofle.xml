@@ -174,7 +174,7 @@
                </citeStructure>
             </citeStructure>
             <citeStructure match="/TEI[1]/text[1]/back[1]/div[@type='indexes']" use="@xml:id" unit="Index des lieux et personnes">
-               <citeData property="dct:title" use="'Index des lieux et personnes'"/><citeStructure match="div" use="@xml:id" unit="Index"><citeData property="dct:title" use="normalize-space(head[1])"/></citeStructure>
+               <citeData property="dct:title" use="'Index des lieux et personnes'"/>
             </citeStructure>
          <citeStructure match="/TEI[1]/text[1]/back[1]/div[@type='index-types-actes']" use="@xml:id" unit="Index des types d'actes"><citeData property="dct:title" use="normalize-space(head[1])"/></citeStructure></refsDecl>
       </encodingDesc>
