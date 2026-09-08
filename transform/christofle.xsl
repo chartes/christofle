@@ -122,7 +122,7 @@
               <li>
                 <a title="Consulter la note"
                    class="internalLink"
-                   href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                   href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                   <xsl:value-of select="tei:ref"/>
                 </a>
                 <xsl:if test="tei:date">
@@ -176,7 +176,7 @@
                 <xsl:attribute name="class">selected</xsl:attribute>
               </xsl:if>
               <a class="internalLink"
-                 href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                 href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                 <xsl:choose>
                   <!-- barre des jours : le quantième suffit, le mois est au-dessus -->
                   <xsl:when test="tei:ref/@type = 'day'">
@@ -209,7 +209,7 @@
         <xsl:for-each select="tei:list/tei:item">
           <li class="month-item">
             <a class="internalLink month-link"
-               href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+               href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
               <xsl:value-of select="normalize-space(tei:ref)"/>
             </a>
             <span class="month-count"> (<xsl:value-of select="tei:num"/>)</span>
@@ -217,7 +217,7 @@
               <xsl:for-each select="tei:list[@type = 'days']/tei:item">
                 <li>
                   <a class="internalLink day-link"
-                     href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                     href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                     <xsl:value-of select="number(substring(tei:ref/@n, 9))"/>
                   </a>
                 </li>
@@ -313,7 +313,7 @@
               <xsl:for-each select="$minutes[tei:date/@when = $when]">
                 <div class="jour-note">
                   <a class="internalLink note-link"
-                     href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                     href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                     <span class="note-num"><xsl:value-of select="tei:ref"/>.</span>
                     <xsl:text> </xsl:text>
                     <xsl:variable name="nature" select="normalize-space(tei:term[@type = 'natureJuridique'][1])"/>
@@ -375,7 +375,7 @@
        TEI) : à revérifier après toute ré-ingestion (ou donner un xml:id au div). -->
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:persName[@ref[starts-with(., '#p-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:placeName[@ref[starts-with(., '#l-')]]" priority="10">
     <a class="linkToIndex"
-       href="/christofle/document/christofle_1437?refId={$christofle-index-refid}#{substring-after(@ref, '#')}"
+       href="/elec/christofle/document/christofle_1437?refId={$christofle-index-refid}#{substring-after(@ref, '#')}"
        title="{normalize-space(.)}">
       <xsl:apply-templates/>
     </a>
@@ -574,7 +574,7 @@
                On repasse donc par la page parent de l'index, qui conserve l'ancre. -->
           <xsl:when test="self::tei:ref and starts-with(normalize-space(@target), '#')">
             <a class="linkToIndex"
-               href="/christofle/document/christofle_1437?refId={$christofle-index-refid}#{substring-after(normalize-space(@target), '#')}">
+               href="/elec/christofle/document/christofle_1437?refId={$christofle-index-refid}#{substring-after(normalize-space(@target), '#')}">
               <xsl:value-of select="normalize-space(.)"/>
             </a>
           </xsl:when>
@@ -610,7 +610,7 @@
     <xsl:variable name="mid" select="substring-after($head, '#minute-')"/>
     <xsl:if test="$mid != ''">
       <xsl:if test="not($first)">, </xsl:if>
-      <a class="internalLink" title="Consulter la minute" href="/christofle/document/christofle_1437?refId=minute-{$mid}">
+      <a class="internalLink" title="Consulter la minute" href="/elec/christofle/document/christofle_1437?refId=minute-{$mid}">
         <xsl:value-of select="number($mid)"/>
       </a>
     </xsl:if>
