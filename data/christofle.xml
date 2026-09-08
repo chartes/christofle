@@ -160,7 +160,7 @@
          <refsDecl>
             <!-- Le site Élec distingue ces pages : DoTS les expose désormais
                  chacune comme une ressource citable du sommaire. -->
-            <citeStructure match="/TEI[1]/text[1]/front[1]/div[@type='homePageAbstract']" use="default" unit="Accueil"><citeData property="dct:title" use="'Accueil'"/></citeStructure>
+            <citeStructure match="/TEI[1]/text[1]/front[1]/div[@type='homePageAbstract']" use="@xml:id" unit="Accueil"><citeData property="dct:title" use="'Accueil'"/></citeStructure>
             <citeStructure match="/TEI[1]/text[1]/front[1]/div[@xml:id='introduction']" use="@xml:id" unit="Introduction">
                <citeData property="dct:title" use="normalize-space(head[1])"/><citeStructure match="div" use="@xml:id" unit="Section"><citeData property="dct:title" use="normalize-space(head[1])"/></citeStructure>
             </citeStructure>
@@ -221,7 +221,7 @@
    </teiHeader>
    <text>
       <front>
-         <div xml:id="r475" type="homePageAbstract">
+         <div xml:id="homePageAbstract" type="homePageAbstract">
             <figure type="homeImage">
                <graphic url="images/seing-PChristofle.jpg"/>
                <figDesc>Seing de Pierre Christofle sur un document portant le sceau de la prévôté d’Orléans (ADL, H Dépôt2, 1B54, 1<hi rend="super">er</hi> août 1442)</figDesc>
