@@ -192,11 +192,16 @@
     </nav>
   </xsl:template>
 
-  <!-- « Édition des notes » : sommaire des douze mois, chacun avec son nombre
-       d'actes et les jours représentés. L'index est précalculé dans le TEI
-       (build_indexes.py) et porté par un <argument>, enfant direct du <group> :
-       il survit donc à excludeFragments. Reproduit la double navigation de
-       l'ÉLEC (#months-list puis #days-list), sans JavaScript. -->
+  <!-- « Édition des notes » : page d'entrée de l'édition proprement dite.
+
+       L'ÉLEC affichait ici un sommaire des douze mois, chacun suivi des jours
+       représentés. DoTS publie déjà les douze mois comme unités citables : ils
+       figurent dans le sommaire (à gauche et en haut) et chaque page de mois
+       porte son propre filtre par jour. Reproduire la liste ici faisait donc
+       doublon avec le sommaire ET avec les pages de mois : on ne garde que
+       l'en-tête et une phrase d'orientation. La liste reste précalculée dans le
+       TEI (<argument type="notes-index">, build_indexes.py) si elle devait être
+       réintroduite. -->
   <xsl:template match="tei:group[tei:argument[@type = 'notes-index']]" priority="12">
     <xsl:apply-templates select="tei:argument[@type = 'notes-index']"/>
   </xsl:template>
@@ -204,28 +209,7 @@
   <xsl:template match="tei:argument[@type = 'notes-index']" priority="12">
     <section class="christofle-notes-index">
       <h1>Édition des notes</h1>
-      <p class="notes-intro">Choisissez un mois, puis un jour.</p>
-      <ul class="months-list">
-        <xsl:for-each select="tei:list/tei:item">
-          <li class="month-item">
-            <a class="internalLink month-link"
-               href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
-              <xsl:value-of select="normalize-space(tei:ref)"/>
-            </a>
-            <span class="month-count"> (<xsl:value-of select="tei:num"/>)</span>
-            <ul class="days-list">
-              <xsl:for-each select="tei:list[@type = 'days']/tei:item">
-                <li>
-                  <a class="internalLink day-link"
-                     href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
-                    <xsl:value-of select="number(substring(tei:ref/@n, 9))"/>
-                  </a>
-                </li>
-              </xsl:for-each>
-            </ul>
-          </li>
-        </xsl:for-each>
-      </ul>
+      <p class="notes-intro">Les <xsl:value-of select="sum(tei:list/tei:item/tei:num)"/> notes de l’année 1437 sont réparties par mois. Choisissez un mois dans le sommaire, puis un jour dans la barre de filtres de la page du mois.</p>
     </section>
   </xsl:template>
 
@@ -267,9 +251,30 @@
   <!-- Lien de téléchargement de l'édition : export TEI live DoTS. -->
   <xsl:template match="tei:ref[starts-with(@target, 'telechargement')]" priority="12">
     <a class="christofle-download" download="christofle_1437.xml"
-       href="/api/dts/document?resource=christofle_1437&amp;mediaType=xml">
+       href="/dots/api/dts/document?resource=christofle_1437&amp;mediaType=xml">
       <xsl:apply-templates/>
     </a>
+  </xsl:template>
+
+  <!-- Liens internes hérités du site ÉLEC : ils pointaient vers des fichiers
+       .html qui n'existent plus. On les redirige vers le fragment DoTS
+       équivalent (les deux cibles ont un xml:id stable dans le TEI). -->
+  <xsl:template match="tei:ref[@type = 'internalLink'][contains(@target, '.html')]" priority="12">
+    <xsl:variable name="cible">
+      <xsl:choose>
+        <xsl:when test="@target = 'partie-4.html'">r1153</xsl:when>
+        <xsl:when test="contains(@target, 'mentions-legales')">mentionsLegales</xsl:when>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:choose>
+      <xsl:when test="$cible != ''">
+        <a class="internalLink" href="/elec/christofle/document/christofle_1437?refId={$cible}">
+          <xsl:apply-templates/>
+        </a>
+      </xsl:when>
+      <!-- Cible inconnue : on garde le texte, sans lien mort. -->
+      <xsl:otherwise><xsl:apply-templates/></xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
   <!-- Liens externes de l'introduction : nouvel onglet. -->
