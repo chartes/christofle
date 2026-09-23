@@ -8,23 +8,12 @@
   <xsl:import href="../hteiml/xsl/tei2html.xsl"/>
 
   <!--
-    Page de garde a la racine (meme correctif que chroniqueslatines.xsl) :
-    christofle_1437 est un corpus de minutes (<text> racine sans xml:id contenant
-    de nombreux <text xml:id="minute-…">). Au rendu du document entier
-    (currentLevel=0) le teiHeader (page de garde) est present ; on neutralise alors
-    le corps <text> racine pour n'afficher que la garde. Les minutes rendues comme
-    fragments arrivent dans un <dts:wrapper> SANS teiHeader : elles ne sont pas
-    touchees (le template minute- priorite 10 continue de s'appliquer).
-    Priorite 15 pour dominer proprement les templates priorite 10 de ce fichier.
+    Rendu racine DTS :
+    la requête /document sans @ref doit laisser la feuille générique rendre
+    l'ensemble du document, et non réduire le résultat au seul teiHeader.
+    Les fragments (accueil, introduction, mois, minutes, index) restent
+    consultables séparément via leurs ref DTS.
   -->
-  <!-- Cas 1 : rendu du TEI complet (racine) : masquer le corps <text>. -->
-  <xsl:template match="tei:TEI[tei:teiHeader]/tei:text" priority="15"/>
-
-  <!-- Cas 2 : contenu servi dans un <dts:wrapper> embarquant le teiHeader
-       (rendu racine via excludeFragments) : ne produire que la page de garde. -->
-  <xsl:template match="*[local-name() = 'wrapper'][tei:teiHeader]" priority="20">
-    <xsl:apply-templates select="tei:teiHeader"/>
-  </xsl:template>
 
   <!--
     Surcharge Christofle — liage des notes d'apparat.
@@ -47,10 +36,32 @@
     note (aside id=@xml:id, retour href=@target) est deja correct dans la
     generique : cette seule surcharge referme les deux sens.
   -->
+  <!-- D14e2 (2026-09-12) : bulle d'apparat au survol, sans JavaScript.
+       L'ancien site portait la note d'apparat en frere du sudit appel
+         <span class="noteAnchor" onmouseover="displayApparatusNote(this)"><sup>1</sup></span>
+         <span class="apparatusNote">1. La lettre J est decoree d'entrelacs.</span>
+       et displayApparatusNote/hideApparatusNote (utils.js, 84 pages relevees)
+       ne faisaient qu'afficher/masquer ce frere au survol : le lecteur lisait la
+       note SANS quitter sa ligne. DoTS-vue compile le fragment comme un gabarit
+       Vue : aucun <script> ne s'execute. On reprend donc le motif retenu pour
+       bellelay (transform/bellelay.xsl) : le texte de la note est recopie dans
+       @data-tip et la CSS l'affiche en bulle sur :hover / :focus-visible.
+       Le lien vers la note en pied (liage @target de la tache precedente) est
+       conserve tel quel : la bulle s'ajoute, elle ne remplace rien. -->
+  <xsl:key name="chr-note-by-id" match="tei:note[@xml:id]" use="@xml:id"/>
+
   <xsl:template match="tei:ref[@type='note']">
+    <xsl:variable name="corps" select="key('chr-note-by-id', substring-after(@target, '#'))[1]"/>
     <a class="noteref"
        id="{@xml:id}"
        href="#{substring-after(@target, '#')}">
+      <xsl:if test="$corps">
+        <!-- « 1. La lettre J est decoree d'entrelacs. » : le numero precedait le
+             texte dans le <span class="apparatusNote"> de l'ancien site. -->
+        <xsl:attribute name="data-tip">
+          <xsl:value-of select="normalize-space(concat(@n, '. ', normalize-space($corps)))"/>
+        </xsl:attribute>
+      </xsl:if>
       <sup><xsl:call-template name="note-n"/></sup>
     </a>
   </xsl:template>
@@ -89,6 +100,9 @@
 
   <!-- Index précalculés dans data/christofle.xml par scripts/build_indexes.py.
        Ils restent disponibles dans les fragments DoTS, sans composant Vue spécifique. -->
+  <!-- D34 : plus aucun lien ne s'en sert (les deux modèles qui l'employaient
+       visent désormais l'entrée). Conservée : elle documente l'identifiant de la
+       page d'index, et un retour en arrière tient en deux remplacements. -->
   <xsl:variable name="christofle-index-refid" select="'r65205'"/>
 
   <!-- Index des types d'actes : vrai fragment TEI/DTS. -->
@@ -122,7 +136,7 @@
               <li>
                 <a title="Consulter la note"
                    class="internalLink"
-                   href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                   href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                   <xsl:value-of select="tei:ref"/>
                 </a>
                 <xsl:if test="tei:date">
@@ -176,7 +190,7 @@
                 <xsl:attribute name="class">selected</xsl:attribute>
               </xsl:if>
               <a class="internalLink"
-                 href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                 href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                 <xsl:choose>
                   <!-- barre des jours : le quantième suffit, le mois est au-dessus -->
                   <xsl:when test="tei:ref/@type = 'day'">
@@ -251,7 +265,7 @@
   <!-- Lien de téléchargement de l'édition : export TEI live DoTS. -->
   <xsl:template match="tei:ref[starts-with(@target, 'telechargement')]" priority="12">
     <a class="christofle-download" download="christofle_1437.xml"
-       href="/dots/api/dts/document?resource=christofle_1437&amp;mediaType=xml">
+       href="http://127.0.0.1:8080/api/dts/document?resource=christofle_1437&amp;mediaType=xml">
       <xsl:apply-templates/>
     </a>
   </xsl:template>
@@ -268,7 +282,7 @@
     </xsl:variable>
     <xsl:choose>
       <xsl:when test="$cible != ''">
-        <a class="internalLink" href="/elec/christofle/document/christofle_1437?refId={$cible}">
+        <a class="internalLink" href="/christofle/document/christofle_1437?refId={$cible}">
           <xsl:apply-templates/>
         </a>
       </xsl:when>
@@ -318,7 +332,7 @@
               <xsl:for-each select="$minutes[tei:date/@when = $when]">
                 <div class="jour-note">
                   <a class="internalLink note-link"
-                     href="/elec/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                     href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                     <span class="note-num"><xsl:value-of select="tei:ref"/>.</span>
                     <xsl:text> </xsl:text>
                     <xsl:variable name="nature" select="normalize-space(tei:term[@type = 'natureJuridique'][1])"/>
@@ -378,10 +392,80 @@
        page parent, l'ancre #l-… / #p-… est conservée et le scroll fonctionne.
        ⚠️ 'r65205' est l'id DoTS auto-généré du <div> d'index (sans xml:id dans le
        TEI) : à revérifier après toute ré-ingestion (ou donner un xml:id au div). -->
-  <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:persName[@ref[starts-with(., '#p-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:placeName[@ref[starts-with(., '#l-')]]" priority="10">
-    <a class="linkToIndex"
-       href="/elec/christofle/document/christofle_1437?refId={$christofle-index-refid}#{substring-after(@ref, '#')}"
-       title="{normalize-space(.)}">
+  <!-- D34 (2026-09-14) : la cible devient l'ENTRÉE elle-même.
+       Mesuré : 4 032 persName + 2 170 placeName = 6 202 renvois, dont 5 996 vers
+       une entrée de 1er niveau et 206 vers une sous-entrée de lieu ; 0 cible
+       inconnue. Toutes sont des unités citables après la mise en lettres.
+       L'ancienne forme « ?refId=r65205#p-0040 » ne peut plus fonctionner : dès
+       que « Index des lieux et personnes » quitte editByCiteType, r65205 est
+       servi en excludeFragments et ne contient plus aucune fiche.
+       DoTS-vue conduit ensuite le lecteur tout seul : une unité au-dessous d'un
+       niveau éditable est marquée « hash » et l'adresse est réécrite en
+       « ?refId=idx-lettre-P#p-0040 » (mesuré sur testaments-poilus :
+       ?refId=EAime devient ?refId=testateurs-A#EAime). -->
+  <!-- agent_chrx2 (2026-09-14) : les <orgName @ref='#o-…'> entrent dans la règle.
+       Mesuré : 21 renvois du texte (19 vers o-0001, 1 vers o-0002, 1 vers o-0003),
+       toutes cibles existantes, AUCUN cliquable jusqu'ici. Ils le deviennent parce
+       que les 3 <org> de l'index sont désormais des unités citables — sans quoi ils
+       figureraient au sommaire sans que rien n'y mène. -->
+  <!-- CORRECTIF p-1043 (2026-09-14).
+       Symptôme : « ?refId=p-1043 » atteint par un clic DANS l'application
+       n'affichait RIEN — pas même un #article — sous la barre de navigation de
+       la page quittée. Mesuré : 0 caractère rendu, contre 1 445 après correctif.
+       Cause : une entrée d'index est une unité citable de niveau 3, donc
+       au-dessous du niveau éditable de DoTS-vue. Un chargement à froid de cette
+       adresse est réécrit vers le parent (« ?refId=idx-lettre-V#p-1043 »), mais
+       une navigation interne (router.push) ne l'est PAS et ne rend rien. D34
+       (2026-09-14, plus haut) a fait viser l'entrée elle-même en pariant sur
+       cette réécriture : elle n'a lieu qu'au chargement à froid. 1 511 renvois
+       d'entrées étaient concernés.
+       ⚠️ À NE PAS confondre avec un second défaut, réel mais SANS effet ici :
+       en « excludeFragments=true » DoTS retire l'ÉLÉMENT PORTEUR lui-même
+       (mesuré sur p-1043 : le <person xml:id="p-1043" corresp="#minute-003">
+       disparaît, il ne reste que <persName>), si bien que les modèles
+       tei:person / tei:place / tei:org ci-dessous ne s'appliquent pas, que la
+       vedette retombe sur le tei:persName générique (« Villebresme de Pierre »,
+       21 caractères) et que @corresp — donc le renvoi à la minute — est perdu.
+       1 354 unités sur 1 943 rendent moins de 80 caractères dans ce mode.
+       Mais DoTS-vue n'appelle PAS excludeFragments (relevé dans les requêtes
+       réseau le 2026-09-14 : document?resource=…&ref=…&mediaType=html, sans le
+       paramètre) : ce mode ne sert que l'API et l'export.
+       Fidélité ÉLEC : l'ancien site ne donne pas de page à une entrée, il l'ancre
+       dans la page de sa lettre — relevé dans notes/note-003.html :
+       href="../index-lieux-et-personnes/lettre-V.html#p-1043". On vise donc
+       l'unité citable de la lettre, plus l'ancre de l'entrée, ce qui est la forme
+       recommandée pour une unité au-dessous du niveau éditable.
+       La lettre de chaque entrée est lue dans christofle-index-lettres.xml
+       (fichier généré, même procédé que delescluze-persons.xml) : le fragment
+       servi ne contient pas l'index, on ne peut pas la calculer sur place.
+       RETOUR EN ARRIÈRE : christofle.xsl.bak_p1043_20260914. -->
+  <xsl:variable name="christofle-index-lettres" select="document('christofle-index-lettres.xml')/index-lettres"/>
+
+  <!-- href d'un renvoi vers une entrée d'index, à partir de son seul identifiant. -->
+  <xsl:template name="christofle-index-href">
+    <xsl:param name="cible"/>
+    <xsl:variable name="lettre" select="$christofle-index-lettres/e[@id = $cible]/@lettre"/>
+    <xsl:text>/christofle/document/christofle_1437?refId=</xsl:text>
+    <xsl:choose>
+      <!-- Entrée connue : page de la lettre + ancre, comme l'ÉLEC. -->
+      <xsl:when test="$lettre">
+        <xsl:value-of select="$lettre"/>
+        <xsl:text>#</xsl:text>
+        <xsl:value-of select="$cible"/>
+      </xsl:when>
+      <!-- Cible inconnue de la carte (0 cas mesuré sur les 1 447 cibles du TEI) :
+           on garde l'ancien comportement plutôt que de fabriquer un lien faux. -->
+      <xsl:otherwise><xsl:value-of select="$cible"/></xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:persName[@ref[starts-with(., '#p-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:placeName[@ref[starts-with(., '#l-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:orgName[@ref[starts-with(., '#o-')]]" priority="10">
+    <a class="linkToIndex" title="{normalize-space(.)}">
+      <xsl:attribute name="href">
+        <xsl:call-template name="christofle-index-href">
+          <xsl:with-param name="cible" select="substring-after(@ref, '#')"/>
+        </xsl:call-template>
+      </xsl:attribute>
       <xsl:apply-templates/>
     </a>
   </xsl:template>
@@ -397,15 +481,34 @@
       </xsl:choose><xsl:text>]</xsl:text>
     </span>
     <!-- Une fiche de note reçoit le fac-similé de son premier folio, comme
-         dans l'édition Élec. Les deux fichiers sont conservés localement. -->
-    <xsl:if test="generate-id() = generate-id(ancestor::tei:text[1]//tei:pb[1])">
-      <xsl:variable name="folio-number" select="format-number(number(substring-before(concat(@n, 'v'), 'v')), '000')"/>
-      <xsl:variable name="folio-side"><xsl:choose><xsl:when test="substring(@n, string-length(@n)) = 'v'">v</xsl:when><xsl:otherwise>r</xsl:otherwise></xsl:choose></xsl:variable>
-      <xsl:variable name="folio-file" select="concat('FRAD045_3E10144_f', $folio-number, '_', $folio-side)"/>
-      <a class="christofle-facsimile" href="/images/christofle/sources/{$folio-file}.jpg" target="_blank" rel="noopener" title="Ouvrir le fac-similé du folio {@n}">
-        <img src="/images/christofle/vignettes/{$folio-file}_ptt.jpg" alt="Fac-similé du folio {@n}"/>
-      </a>
-    </xsl:if>
+         dans l'édition Élec. Les deux fichiers sont conservés localement.
+         2026-09-11 (B8) : DoTS-vue fait passer tout lien de même origine par le routeur
+         (target="_blank" ignoré) : <a href="/images/…"> menait à une route morte. La vignette
+         déplie désormais l'image pleine taille dans la page (<details>, sans script). -->
+    <!-- D14e2 (2026-09-12) : un fac-similé par folio, et non plus le seul premier.
+         L'ancien site listait TOUS les folios de la minute (<ul class="images-list">
+         « Fol. 56 v° | Fol. 57 r° ») et loadImageSectionBis (utils.js, 82 pages
+         relevées) échangeait l'image affichée au clic. Le test « premier pb »
+         ci-dessous ne donnait accès qu'au premier folio : sur 387 minutes,
+         510 folios sont cités et 124 restaient donc inatteignables
+         (113 minutes ont 2 folios ou plus). Chaque pb porte désormais son propre
+         <details> — placé au saut de page, donc à l'endroit exact du texte qu'il
+         reproduit, ce qui remplace le sélecteur de folio sans JavaScript.
+         Les 191 fichiers nécessaires existent tous dans dots-vue/public/images. -->
+    <xsl:variable name="folio-number" select="format-number(number(substring-before(concat(@n, 'v'), 'v')), '000')"/>
+    <xsl:variable name="folio-side"><xsl:choose><xsl:when test="substring(@n, string-length(@n)) = 'v'">v</xsl:when><xsl:otherwise>r</xsl:otherwise></xsl:choose></xsl:variable>
+    <xsl:variable name="folio-file" select="concat('FRAD045_3E10144_f', $folio-number, '_', $folio-side)"/>
+    <!-- « 56 v° » / « 57 r° » : libellé lisible, comme dans la légende de l'ÉLEC. -->
+    <xsl:variable name="folio-label" select="concat(number(substring-before(concat(@n, 'v'), 'v')), ' ', $folio-side, '°')"/>
+    <details class="christofle-facsimile">
+      <summary title="Afficher en grand le fac-similé du folio {$folio-label}">
+        <img class="christofle-facsimile-vignette" src="/images/christofle/vignettes/{$folio-file}_ptt.jpg" alt="Fac-similé du folio {$folio-label}"/>
+        <span class="christofle-facsimile-ouvrir">Fol. <xsl:value-of select="$folio-label"/> — agrandir le fac-similé</span>
+        <span class="christofle-facsimile-fermer">Fol. <xsl:value-of select="$folio-label"/> — réduire le fac-similé</span>
+      </summary>
+      <img class="christofle-facsimile-image" src="/images/christofle/sources/{$folio-file}.jpg" alt="Fac-similé du folio {$folio-label}" loading="lazy"/>
+      <span class="christofle-facsimile-legende">Archives départementales du Loiret, 3E 10144, fol. <xsl:value-of select="$folio-label"/></span>
+    </details>
   </xsl:template>
 
   <!-- Les images de l'introduction sont désormais servies par le répertoire
@@ -438,12 +541,48 @@
         </xsl:for-each>
       </div>
 
+      <!-- D34 (2026-09-14) : la barre des 21 boutons de filtre est RETIRÉE.
+           Les lettres sont désormais des unités citables du TEI
+           (div[@type='lettre'], xml:id=idx-lettre-A…) : elles paraissent dans le
+           sommaire de gauche, avec leurs 1 420 entrées. Garder la barre ferait
+           doublon — c'est ce qui a été retiré partout ailleurs (D28).
+           Le modèle christofle-lettres-bar et la clé chr-idx-lettre restent dans
+           la feuille, inutilisés, pour un retour en arrière en une ligne.
+           Les 26 règles :has() de christofle.customCss.css (l. 547-635) deviennent
+           elles aussi sans objet ; elles sont inoffensives et peuvent rester.
+
+           Cette page-ci n'est plus servie qu'en excludeFragments (dès que
+           « Index des lieux et personnes » quitte editByCiteType) : les
+           div[@type='lettre'] en sont retirés par DoTS et il ne reste que les
+           deux paragraphes d'introduction. L'apply-templates ci-dessous ne sert
+           donc que si l'on sert l'unité entière (API, export) : il rend alors
+           l'index complet, lettre par lettre, sans rien perdre. -->
       <div class="christofle-index-entries">
-        <xsl:for-each select=".//tei:person | tei:div[@type = 'places-index']/tei:listPlace/tei:place">
-          <xsl:sort select="translate(normalize-space(string((tei:persName/tei:surname[normalize-space()] | tei:persName/tei:name[normalize-space()] | tei:persName/tei:forename[not(../tei:surname[normalize-space()] or ../tei:name[normalize-space()])] | tei:placeName)[1])), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')" data-type="text" lang="fr"/>
-          <xsl:sort select="translate(normalize-space(string(tei:persName/tei:forename[1])), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')" data-type="text" lang="fr"/>
+        <xsl:for-each select="tei:div[@type = 'lettre']">
+          <!-- D34 : plus de xsl:sort. L'ordre alphabétique mêlé est désormais
+               celui de la SOURCE, écrit par d34_christofle_index_lettres.xq avec
+               une clé réglée sur celle-ci (0 divergence sur 1 420 vérifiée).
+               Trier encore ferait diverger la page du sommaire, qui suit
+               l'ordre du document. -->
           <xsl:apply-templates select="."/>
         </xsl:for-each>
+      </div>
+    </section>
+  </xsl:template>
+
+  <!-- D34 : page d'une lettre (unité citable idx-lettre-A…). C'est l'équivalent
+       exact des pages lettre-X.html de l'ÉLEC historique.
+       ⚠ la classe « christofle-index » est OBLIGATOIRE ici : toute la mise en
+       forme des fiches est écrite « .christofle-index .index-entry » dans
+       christofle.customCss.css (l. 269-355). Sans elle, les pages de lettre
+       perdraient leur présentation. -->
+  <xsl:template match="tei:div[@type = 'lettre']" priority="9">
+    <section class="christofle-index christofle-index-lettre">
+      <xsl:if test="tei:head">
+        <h2 class="christofle-index-lettre-titre"><xsl:value-of select="normalize-space(tei:head)"/></h2>
+      </xsl:if>
+      <div class="christofle-index-entries">
+        <xsl:apply-templates select="tei:listPerson | tei:listPlace"/>
       </div>
     </section>
   </xsl:template>
@@ -474,16 +613,105 @@
     <h2><xsl:apply-templates/></h2>
   </xsl:template>
 
+  <!-- D14e2 : lettre de classement d'une vedette d'index.
+       La table translate() est EXACTEMENT celle des <xsl:sort> ci-dessus : la
+       lettre affichée par la barre est donc toujours celle du tri (sinon une
+       vedette accentuée se rangerait sous une lettre et se filtrerait sous une
+       autre). @use ne peut pas référencer une variable en XSLT 1.0 : la table
+       est donc répétée littéralement dans la clé et dans le template. -->
+  <xsl:key name="chr-idx-lettre"
+           match="tei:person | tei:div[@type = 'places-index']/tei:listPlace/tei:place"
+           use="translate(substring(normalize-space(string((tei:persName/tei:surname[normalize-space()] | tei:persName/tei:name[normalize-space()] | tei:persName/tei:forename[not(../tei:surname[normalize-space()] or ../tei:name[normalize-space()])] | tei:placeName)[1])), 1, 1), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')"/>
+
+  <xsl:template name="christofle-index-lettre">
+    <!-- agent_chrx2 : « tei:orgName » ajouté à l'union, pour les 3 <org>. La même
+         branche a été ajoutée à local:vedette() de d34_christofle_index_lettres.xq :
+         les deux doivent rester d'accord, sinon une vedette se rangerait sous une
+         lettre et s'afficherait sous une autre. -->
+    <xsl:variable name="vedette" select="normalize-space(string((tei:persName/tei:surname[normalize-space()] | tei:persName/tei:name[normalize-space()] | tei:persName/tei:forename[not(../tei:surname[normalize-space()] or ../tei:name[normalize-space()])] | tei:placeName | tei:orgName)[1]))"/>
+    <xsl:variable name="c" select="translate(substring($vedette, 1, 1), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')"/>
+    <xsl:choose>
+      <!-- contains(…, '') est vrai : le test sur $c non vide est nécessaire. -->
+      <xsl:when test="$c != '' and contains('ABCDEFGHIJKLMNOPQRSTUVWXYZ', $c)">
+        <xsl:value-of select="$c"/>
+      </xsl:when>
+      <xsl:otherwise>#</xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <!-- Parcours récursif de l'alphabet : un bouton par lettre REPRÉSENTÉE
+       (key() renvoie un node-set vide pour les autres). « Toutes » est le
+       choix par défaut : aucune règle :has() ne s'applique, tout reste visible. -->
+  <xsl:template name="christofle-lettres-bar">
+    <nav class="chr-lettres" aria-label="Filtrer l’index par lettre">
+      <span class="chr-lettres-label">Lettre :</span>
+      <span class="chr-lettre chr-lettre-tous">
+        <input type="radio" name="chr-lettre" value="__tous__" id="chr-lettre-tous" class="chr-lettre-radio" checked="checked"/>
+        <label for="chr-lettre-tous">Toutes</label>
+      </span>
+      <xsl:call-template name="christofle-lettres-bar-loop"/>
+    </nav>
+  </xsl:template>
+
+  <xsl:template name="christofle-lettres-bar-loop">
+    <xsl:param name="alphabet" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
+    <xsl:if test="$alphabet != ''">
+      <xsl:variable name="L" select="substring($alphabet, 1, 1)"/>
+      <xsl:if test="key('chr-idx-lettre', $L)">
+        <span class="chr-lettre">
+          <input type="radio" name="chr-lettre" value="{$L}" id="chr-lettre-{$L}" class="chr-lettre-radio"/>
+          <label for="chr-lettre-{$L}" title="{count(key('chr-idx-lettre', $L))} vedettes"><xsl:value-of select="$L"/></label>
+        </span>
+      </xsl:if>
+      <xsl:call-template name="christofle-lettres-bar-loop">
+        <xsl:with-param name="alphabet" select="substring($alphabet, 2)"/>
+      </xsl:call-template>
+    </xsl:if>
+  </xsl:template>
+
   <xsl:template match="tei:listPerson | tei:listPlace" priority="8">
-    <xsl:apply-templates select="tei:person | tei:place"/>
+    <xsl:apply-templates select="tei:person | tei:org | tei:place"/>
+  </xsl:template>
+
+  <!-- Fiche organisme. agent_chrx2 (2026-09-14).
+       Le <listPerson> de l'index compte 1078 enfants : 1075 <person> et 3 <org>
+       (o-0001 « Châtelet, Compagnons du », o-0002 « Saint-Aignan, chapelains de »,
+       o-0003 « Saint-Ladre, chapelains de »). Aucun modèle ne les traitait : ils
+       sont ABSENTS de la page depuis toujours, alors que 21 renvois du texte les
+       visent. Ils deviennent des unités citables du sommaire avec D34 ; sans ce
+       modèle, le sommaire porterait trois entrées ne menant à rien.
+       RETOUR EN ARRIÈRE : supprimer ce modèle, retirer « tei:org » ci-dessus, et
+       retirer « listPerson/org » du @match du refsDecl — les 3 <org> redeviennent
+       invisibles sans que le TEI perde quoi que ce soit. -->
+  <xsl:template match="tei:org" priority="8">
+    <article id="{@xml:id}" class="index-entry org-entry">
+      <xsl:attribute name="data-lettre"><xsl:call-template name="christofle-index-lettre"/></xsl:attribute>
+      <p>
+        <span class="orgName-entry"><xsl:value-of select="normalize-space(tei:orgName[1])"/></span>
+        <xsl:call-template name="christofle-index-refs"/>
+        <xsl:apply-templates select="tei:note" mode="christofle-index-seealso"/>
+      </p>
+    </article>
   </xsl:template>
 
   <!-- Fiche personne -->
   <xsl:template match="tei:person" priority="8">
     <article id="{@xml:id}" class="index-entry person-entry">
+      <!-- D14e2 : cible des règles de filtre par lettre (barre .chr-lettres). -->
+      <xsl:attribute name="data-lettre"><xsl:call-template name="christofle-index-lettre"/></xsl:attribute>
       <p>
         <span class="persName-entry">
-          <xsl:apply-templates select="tei:persName" mode="christofle-index-name"/>
+          <!-- 2026-09-13 : SEULEMENT le premier <persName>. 24 personnes du corpus en portent
+               deux (formes graphiques concurrentes du même nom), et les rendre l'un après
+               l'autre donnait « Barbechon, Baubin Barbachon, Baubin » — le nom complet deux
+               fois de suite, sans séparateur. L'ÉLEC n'imprime pas cela : il joint les formes
+               du NOM DE FAMILLE par une barre oblique et ne répète pas le prénom, soit
+               « Barbechon / Barbachon, Baubin » (relevé dans la source de
+               index-lieux-et-personnes/lettre-B.html). Les variantes sont donc passées au
+               modèle de la vedette, qui les insère au bon endroit. -->
+          <xsl:apply-templates select="tei:persName[1]" mode="christofle-index-name">
+            <xsl:with-param name="variantes" select="tei:persName[position() > 1]"/>
+          </xsl:apply-templates>
           <xsl:if test="tei:note[@type = 'relation']">
             <xsl:text>, </xsl:text>
             <span class="persName-note"><xsl:value-of select="normalize-space(tei:note[@type = 'relation'])"/></span>
@@ -497,9 +725,17 @@
 
   <!-- Nom en vedette : « Surname, Forename nameLink », « Forename, roleName »… -->
   <xsl:template match="tei:persName" mode="christofle-index-name">
+    <!-- Les autres <persName> de la même personne : leurs noms de famille viennent s'ajouter
+         derrière le premier, séparés par « / », avant le prénom. -->
+    <xsl:param name="variantes" select="()"/>
     <xsl:choose>
       <xsl:when test="tei:surname">
         <span class="surname"><xsl:value-of select="normalize-space(tei:surname)"/></span>
+        <xsl:for-each select="$variantes/tei:surname[normalize-space()]
+                              [normalize-space() != normalize-space(current()/tei:surname)]">
+          <xsl:text> / </xsl:text>
+          <span class="surname surname-variante"><xsl:value-of select="normalize-space(.)"/></span>
+        </xsl:for-each>
         <xsl:if test="tei:forename">
           <xsl:text>, </xsl:text>
           <span class="forename"><xsl:value-of select="normalize-space(tei:forename)"/></span>
@@ -528,8 +764,21 @@
   <!-- Fiche lieu : présentation historique "ADON [ Loiret, Briare ]". -->
   <xsl:template match="tei:place" priority="8">
     <article id="{@xml:id}" class="index-entry place-entry">
+      <!-- D14e2 : idem. Les sous-entrées de lieux en héritent aussi, mais les
+           règles de filtre ne visent que les enfants directs de
+           .christofle-index-entries : une sous-entrée suit toujours son parent. -->
+      <xsl:attribute name="data-lettre"><xsl:call-template name="christofle-index-lettre"/></xsl:attribute>
       <p>
-        <span class="placeName-entry"><xsl:apply-templates select="tei:placeName" mode="christofle-index-inline"/></span>
+        <!-- 2026-09-13 : 37 lieux portent deux ou trois <placeName> (forme historique et forme
+             actuelle). Les rendre à la suite les collait : « Saint-Privé-lez-OrléansSaint-Pryvé-
+             Saint-Mesmin ». L'ÉLEC les sépare par une barre oblique — « Saint-Privé-lez-Orléans /
+             Saint-Pryvé-Saint-Mesmin » (relevé dans index-lieux-et-personnes/lettre-S.html). -->
+        <span class="placeName-entry">
+          <xsl:for-each select="tei:placeName">
+            <xsl:if test="position() > 1"><xsl:text> / </xsl:text></xsl:if>
+            <xsl:apply-templates select="." mode="christofle-index-inline"/>
+          </xsl:for-each>
+        </span>
         <xsl:if test="tei:location">
           <xsl:text> [ </xsl:text>
           <span class="location"><xsl:apply-templates select="tei:location/*" mode="christofle-index-loc"/></span>
@@ -578,8 +827,17 @@
           <!-- Les ancres nues (#p-…/#l-…) sont interceptées par le routeur SPA.
                On repasse donc par la page parent de l'index, qui conserve l'ancre. -->
           <xsl:when test="self::tei:ref and starts-with(normalize-space(@target), '#')">
-            <a class="linkToIndex"
-               href="/elec/christofle/document/christofle_1437?refId={$christofle-index-refid}#{substring-after(normalize-space(@target), '#')}">
+            <!-- D34 : idem pour les 157 renvois « voir » internes à l'index
+                 (156 vers une entrée, 1 vers une sous-entrée).
+                 CORRECTIF p-1043 : même cible que les renvois des minutes,
+                 « page de la lettre + ancre » ; sinon ces 157 liens mènent eux
+                 aussi à une page vide. -->
+            <a class="linkToIndex">
+              <xsl:attribute name="href">
+                <xsl:call-template name="christofle-index-href">
+                  <xsl:with-param name="cible" select="substring-after(normalize-space(@target), '#')"/>
+                </xsl:call-template>
+              </xsl:attribute>
               <xsl:value-of select="normalize-space(.)"/>
             </a>
           </xsl:when>
@@ -615,7 +873,7 @@
     <xsl:variable name="mid" select="substring-after($head, '#minute-')"/>
     <xsl:if test="$mid != ''">
       <xsl:if test="not($first)">, </xsl:if>
-      <a class="internalLink" title="Consulter la minute" href="/elec/christofle/document/christofle_1437?refId=minute-{$mid}">
+      <a class="internalLink" title="Consulter la minute" href="/christofle/document/christofle_1437?refId=minute-{$mid}">
         <xsl:value-of select="number($mid)"/>
       </a>
     </xsl:if>
@@ -626,5 +884,29 @@
       </xsl:call-template>
     </xsl:if>
   </xsl:template>
+
+  <!-- D5-DEBUT (autopilote 2026-09-12) : liens vers les anciens sites ELEC -->
+  <!-- hteiml fait un lien de tout tei:idno commencant par « http » (tei2html.xsl l. 1805),
+       du tei:title voisin d'un idno[@type='URI'] (l. 1796) et de tei:ref/@target (l. 1456).
+       Les anciens sites ELEC ferment : le TEXTE affiche est conserve mot pour mot (c'est
+       l'identifiant de la publication d'origine), seule la cible devient la route locale.
+       Table et bloc produits par dots-autopilot/scripts/d5_legacy_links_fix.py. -->
+  <!-- portail ELEC -->
+  <xsl:template match="tei:title[../tei:idno[@type = 'URI'][normalize-space(.) = 'http://elec.enc.sorbonne.fr' or normalize-space(.) = 'http://elec.enc.sorbonne.fr/']]" priority="14">
+    <a class="title d5-local" href="/"><xsl:apply-templates/></a>
+  </xsl:template>
+  <!-- renvoi bibliographique vers cette edition -->
+  <xsl:template match="tei:ref[@target = 'http://elec.enc.sorbonne.fr/christofle/']" priority="14">
+    <a class="ref d5-local" href="/christofle"><xsl:apply-templates/></a>
+  </xsl:template>
+  <!-- 2026-09-12 : dernier renvoi vers l'ancien site, dans l'EXEMPLE DE CITATION du teiHeader
+       (« En ligne : http://elec.enc.sorbonne.fr/christofle/notes/note-136.html »). La page existe
+       ici sous `minute-136` (vérifié dans la navigation DTS : 411 unités, dont minute-136). Même
+       règle que le reste du bloc D5 : le TEXTE reste mot pour mot — c'est l'adresse de la
+       publication d'origine, citée comme telle — et seule la cible devient la route locale. -->
+  <xsl:template match="tei:ref[normalize-space(@target) = 'http://elec.enc.sorbonne.fr/christofle/notes/note-136.html']" priority="15">
+    <a class="ref d5-local" href="/christofle/document/christofle_1437?refId=minute-136"><xsl:apply-templates/></a>
+  </xsl:template>
+  <!-- D5-FIN -->
 
 </xsl:transform>
