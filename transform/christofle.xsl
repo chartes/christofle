@@ -501,7 +501,20 @@
          dans le paratexte « Commancement d'année », que l'Élec n'illustre pas non
          plus. -->
     <xsl:variable name="facs-file" select="substring-after(@facs, 'images/sources/')"/>
-    <xsl:variable name="folio" select="$christofle-images-locales/folio[@fichier = $facs-file][1]"/>
+    <!-- Repli pour une base non encore réingérée : tant que la source servie ne
+         porte pas @facs, on retombe sur le nom déduit de @n. Ce repli n'invente
+         rien — il est filtré par le recensement ci-dessous, et le relevé des 387
+         pages de notes de l'Élec a vérifié que pour les 510 <pb> des minutes le
+         nom déduit est exactement le fichier servi par le site. -->
+    <xsl:variable name="facs-replie"
+      select="concat('FRAD045_3E10144_f',
+                     format-number(number(substring-before(concat(@n, 'v'), 'v')), '000'),
+                     '_',
+                     substring('vr', 1 + number(not(substring(@n, string-length(@n)) = 'v')), 1),
+                     '.jpg')"/>
+    <xsl:variable name="folio"
+      select="($christofle-images-locales/folio[@fichier = $facs-file]
+               | $christofle-images-locales/folio[not($facs-file != '')][@fichier = $facs-replie])[1]"/>
     <xsl:if test="$folio">
       <xsl:variable name="folio-label" select="$folio/@libelle"/>
       <details class="christofle-facsimile">
