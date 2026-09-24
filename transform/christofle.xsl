@@ -470,6 +470,11 @@
     </a>
   </xsl:template>
 
+  <!-- Recensement des fac-similés réellement servis, relevé sur les pages de notes
+       de l'édition Élec et vérifié dans dots-vue/public/images/christofle/ ;
+       même dispositif que saint-denis-images-locales.xml. -->
+  <xsl:variable name="christofle-images-locales" select="document('christofle-images-locales.xml')/images"/>
+
   <!-- L'ancienne edition affichait les folios sous la forme [77 v°]. -->
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:pb" priority="10">
     <span class="pb"><xsl:text>[</xsl:text>
@@ -480,35 +485,35 @@
         <xsl:otherwise><xsl:value-of select="@n"/></xsl:otherwise>
       </xsl:choose><xsl:text>]</xsl:text>
     </span>
-    <!-- Une fiche de note reçoit le fac-similé de son premier folio, comme
-         dans l'édition Élec. Les deux fichiers sont conservés localement.
-         2026-09-11 (B8) : DoTS-vue fait passer tout lien de même origine par le routeur
-         (target="_blank" ignoré) : <a href="/images/…"> menait à une route morte. La vignette
-         déplie désormais l'image pleine taille dans la page (<details>, sans script). -->
-    <!-- D14e2 (2026-09-12) : un fac-similé par folio, et non plus le seul premier.
-         L'ancien site listait TOUS les folios de la minute (<ul class="images-list">
-         « Fol. 56 v° | Fol. 57 r° ») et loadImageSectionBis (utils.js, 82 pages
-         relevées) échangeait l'image affichée au clic. Le test « premier pb »
-         ci-dessous ne donnait accès qu'au premier folio : sur 387 minutes,
-         510 folios sont cités et 124 restaient donc inatteignables
-         (113 minutes ont 2 folios ou plus). Chaque pb porte désormais son propre
-         <details> — placé au saut de page, donc à l'endroit exact du texte qu'il
-         reproduit, ce qui remplace le sélecteur de folio sans JavaScript.
-         Les 191 fichiers nécessaires existent tous dans dots-vue/public/images. -->
-    <xsl:variable name="folio-number" select="format-number(number(substring-before(concat(@n, 'v'), 'v')), '000')"/>
-    <xsl:variable name="folio-side"><xsl:choose><xsl:when test="substring(@n, string-length(@n)) = 'v'">v</xsl:when><xsl:otherwise>r</xsl:otherwise></xsl:choose></xsl:variable>
-    <xsl:variable name="folio-file" select="concat('FRAD045_3E10144_f', $folio-number, '_', $folio-side)"/>
-    <!-- « 56 v° » / « 57 r° » : libellé lisible, comme dans la légende de l'ÉLEC. -->
-    <xsl:variable name="folio-label" select="concat(number(substring-before(concat(@n, 'v'), 'v')), ' ', $folio-side, '°')"/>
-    <details class="christofle-facsimile">
-      <summary title="Afficher en grand le fac-similé du folio {$folio-label}">
-        <img class="christofle-facsimile-vignette" src="/images/christofle/vignettes/{$folio-file}_ptt.jpg" alt="Fac-similé du folio {$folio-label}"/>
-        <span class="christofle-facsimile-ouvrir">Fol. <xsl:value-of select="$folio-label"/> — agrandir le fac-similé</span>
-        <span class="christofle-facsimile-fermer">Fol. <xsl:value-of select="$folio-label"/> — réduire le fac-similé</span>
-      </summary>
-      <img class="christofle-facsimile-image" src="/images/christofle/sources/{$folio-file}.jpg" alt="Fac-similé du folio {$folio-label}" loading="lazy"/>
-      <span class="christofle-facsimile-legende">Archives départementales du Loiret, 3E 10144, fol. <xsl:value-of select="$folio-label"/></span>
-    </details>
+    <!-- Fac-similé du folio, comme dans l'édition Élec. La vignette déplie l'image
+         pleine taille dans la page (<details>, sans script) : DoTS-vue fait passer
+         tout lien de même origine par le routeur (target="_blank" ignoré), donc un
+         <a href="/images/…"> menait à une route morte.
+         D14e2 (2026-09-12) : un fac-similé par folio et non plus le seul premier de
+         la minute. L'ancien site listait tous les folios (<ul class="images-list">
+         « Fol. 56 v° | Fol. 57 r° ») et loadImageSectionBis (theme/utils.js)
+         échangeait l'image au clic ; 113 minutes ont deux folios ou plus.
+         2026-09-24 : le nom du fichier n'est plus calculé à partir de @n. Il est lu
+         dans @facs — posé dans la source d'après les 387 pages de notes du site
+         historique — puis confronté au recensement christofle-images-locales.xml.
+         Un <pb> sans @facs, ou dont le fichier n'est pas recensé, n'affiche pas
+         d'image plutôt que d'ouvrir un lien mort : c'est le cas du folio 82 cité
+         dans le paratexte « Commancement d'année », que l'Élec n'illustre pas non
+         plus. -->
+    <xsl:variable name="facs-file" select="substring-after(@facs, 'images/sources/')"/>
+    <xsl:variable name="folio" select="$christofle-images-locales/folio[@fichier = $facs-file][1]"/>
+    <xsl:if test="$folio">
+      <xsl:variable name="folio-label" select="$folio/@libelle"/>
+      <details class="christofle-facsimile">
+        <summary title="Afficher en grand le fac-similé du folio {$folio-label}">
+          <img class="christofle-facsimile-vignette" src="/images/christofle/vignettes/{$folio/@vignette}" alt="Fac-similé du folio {$folio-label}"/>
+          <span class="christofle-facsimile-ouvrir">Fol. <xsl:value-of select="$folio-label"/> — agrandir le fac-similé</span>
+          <span class="christofle-facsimile-fermer">Fol. <xsl:value-of select="$folio-label"/> — réduire le fac-similé</span>
+        </summary>
+        <img class="christofle-facsimile-image" src="/images/christofle/sources/{$folio/@fichier}" alt="Fac-similé du folio {$folio-label}" loading="lazy"/>
+        <span class="christofle-facsimile-legende">Archives départementales du Loiret, 3E 10144, fol. <xsl:value-of select="$folio-label"/></span>
+      </details>
+    </xsl:if>
   </xsl:template>
 
   <!-- Les images de l'introduction sont désormais servies par le répertoire
