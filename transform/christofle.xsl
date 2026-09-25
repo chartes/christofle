@@ -157,14 +157,14 @@
   <!-- Les mois utilisent l'argument TEI précalculé dans data/christofle.xml. -->
   <xsl:template match="*[local-name() = 'wrapper'][not(tei:teiHeader)]" priority="12">
     <xsl:choose>
-      <xsl:when test="tei:argument[@type='month-index']">
-        <xsl:apply-templates select="tei:argument[@type='month-index']"/>
+      <xsl:when test="tei:argument[@ana = '#month-index']">
+        <xsl:apply-templates select="tei:argument[@ana = '#month-index']"/>
       </xsl:when>
-      <xsl:when test="tei:argument[@type='intro-index']">
-        <xsl:apply-templates select="tei:argument[@type='intro-index']"/>
+      <xsl:when test="tei:argument[@ana = '#intro-index']">
+        <xsl:apply-templates select="tei:argument[@ana = '#intro-index']"/>
       </xsl:when>
-      <xsl:when test="tei:argument[@type='notes-index']">
-        <xsl:apply-templates select="tei:argument[@type='notes-index']"/>
+      <xsl:when test="tei:argument[@ana = '#notes-index']">
+        <xsl:apply-templates select="tei:argument[@ana = '#notes-index']"/>
       </xsl:when>
       <xsl:otherwise><xsl:apply-templates/></xsl:otherwise>
     </xsl:choose>
@@ -174,7 +174,7 @@
        #days-list de notes/note-001.html) : les douze mois, puis les jours du
        mois courant. Précalculée par build_indexes.py dans chaque minute, donc
        disponible même quand le fragment est servi seul. Aucun JavaScript. -->
-  <xsl:template match="tei:argument[@type = 'note-nav']" priority="12">
+  <xsl:template match="tei:argument[@ana = '#note-nav']" priority="12">
     <nav class="christofle-note-nav" aria-label="Navigation par mois et par jour">
       <xsl:for-each select="tei:list">
         <ul>
@@ -216,11 +216,11 @@
        l'en-tête et une phrase d'orientation. La liste reste précalculée dans le
        TEI (<argument type="notes-index">, build_indexes.py) si elle devait être
        réintroduite. -->
-  <xsl:template match="tei:group[tei:argument[@type = 'notes-index']]" priority="12">
-    <xsl:apply-templates select="tei:argument[@type = 'notes-index']"/>
+  <xsl:template match="tei:group[tei:argument[@ana = '#notes-index']]" priority="12">
+    <xsl:apply-templates select="tei:argument[@ana = '#notes-index']"/>
   </xsl:template>
 
-  <xsl:template match="tei:argument[@type = 'notes-index']" priority="12">
+  <xsl:template match="tei:argument[@ana = '#notes-index']" priority="12">
     <section class="christofle-notes-index">
       <h1>Édition des notes</h1>
       <p class="notes-intro">Les <xsl:value-of select="sum(tei:list/tei:item/tei:num)"/> notes de l’année 1437 sont réparties par mois. Choisissez un mois dans le sommaire, puis un jour dans la barre de filtres de la page du mois.</p>
@@ -231,8 +231,8 @@
        précalculé dans le TEI (build_indexes.py) et porté par un <argument>,
        enfant direct du <div> : il survit donc à excludeFragments, alors que les
        parties elles-mêmes, unités citables, sont retirées du fragment. -->
-  <xsl:template match="tei:div[@xml:id = 'introduction'][tei:argument[@type = 'intro-index']]" priority="12">
-    <xsl:apply-templates select="tei:argument[@type = 'intro-index']"/>
+  <xsl:template match="tei:div[@xml:id = 'introduction'][tei:argument[@ana = '#intro-index']]" priority="12">
+    <xsl:apply-templates select="tei:argument[@ana = '#intro-index']"/>
   </xsl:template>
 
   <!-- L'ÉLEC n'a pas de page d'accueil d'introduction : son entrée de menu mène
@@ -241,7 +241,7 @@
        l'<argument> — les parties elles-mêmes, unités citables, sont retirées du
        fragment servi. La liste tei:list reste disponible dans le TEI si un
        sommaire devait être réintroduit. -->
-  <xsl:template match="tei:argument[@type = 'intro-index']" priority="12">
+  <xsl:template match="tei:argument[@ana = '#intro-index']" priority="12">
     <section class="christofle-intro">
       <h1 class="intro-head">
         <xsl:value-of select="normalize-space(tei:head)"/>
@@ -252,11 +252,11 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="tei:group[@type='month'][tei:argument[@type='month-index']]" priority="12">
-    <xsl:apply-templates select="tei:argument[@type='month-index']"/>
+  <xsl:template match="tei:group[@type='month'][tei:argument[@ana = '#month-index']]" priority="12">
+    <xsl:apply-templates select="tei:argument[@ana = '#month-index']"/>
   </xsl:template>
 
-  <xsl:template match="tei:argument[@type='month-index']" priority="12">
+  <xsl:template match="tei:argument[@ana = '#month-index']" priority="12">
     <xsl:call-template name="christofle-month-index">
       <xsl:with-param name="month" select="."/>
     </xsl:call-template>
@@ -352,7 +352,7 @@
   </xsl:template>
 
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]" priority="10">
-    <xsl:apply-templates select="tei:argument[@type = 'note-nav']"/>
+    <xsl:apply-templates select="tei:front/tei:argument[@ana = '#note-nav']"/>
     <article id="{@xml:id}" class="christofle-minute">
       <header class="recordMetadata">
         <h2>
