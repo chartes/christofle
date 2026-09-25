@@ -435,16 +435,21 @@
        href="../index-lieux-et-personnes/lettre-V.html#p-1043". On vise donc
        l'unité citable de la lettre, plus l'ancre de l'entrée, ce qui est la forme
        recommandée pour une unité au-dessous du niveau éditable.
-       La lettre de chaque entrée est lue dans christofle-index-lettres.xml
-       (fichier généré, même procédé que delescluze-persons.xml) : le fragment
-       servi ne contient pas l'index, on ne peut pas la calculer sur place.
+       La lettre de chaque entrée est portée par la source elle-même : à côté de
+       son @ref (ou de son @target), chaque renvoi vers une entrée d'index a un
+       @corresp="#idx-lettre-X" qui nomme la division-lettre où l'entrée vit
+       réellement. Elle reste donc lisible dans le fragment servi, qui ne contient
+       pas l'index et où la chaîne d'ancêtres est absente.
+       2026-09-25 : le fichier compagnon christofle-index-lettres.xml, qui portait
+       cette information hors de la source, a été supprimé après réinjection de ses
+       1 511 entrées dans le TEI (6 380 @corresp posés).
        RETOUR EN ARRIÈRE : christofle.xsl.bak_p1043_20260914. -->
-  <xsl:variable name="christofle-index-lettres" select="document('christofle-index-lettres.xml')/index-lettres"/>
 
-  <!-- href d'un renvoi vers une entrée d'index, à partir de son seul identifiant. -->
+  <!-- href d'un renvoi vers une entrée d'index : identifiant de la cible, et
+       division-lettre qui la contient, lue dans le @corresp du renvoi. -->
   <xsl:template name="christofle-index-href">
     <xsl:param name="cible"/>
-    <xsl:variable name="lettre" select="$christofle-index-lettres/e[@id = $cible]/@lettre"/>
+    <xsl:param name="lettre"/>
     <xsl:text>/christofle/document/christofle_1437?refId=</xsl:text>
     <xsl:choose>
       <!-- Entrée connue : page de la lettre + ancre, comme l'ÉLEC. -->
@@ -453,8 +458,10 @@
         <xsl:text>#</xsl:text>
         <xsl:value-of select="$cible"/>
       </xsl:when>
-      <!-- Cible inconnue de la carte (0 cas mesuré sur les 1 447 cibles du TEI) :
-           on garde l'ancien comportement plutôt que de fabriquer un lien faux. -->
+      <!-- Renvoi sans @corresp, c'est-à-dire dont la cible n'est dans aucune
+           division-lettre (1 cas dans la source : un « voir » d'apparat qui
+           pointe une minute) : on garde l'ancien comportement plutôt que de
+           fabriquer un lien faux. -->
       <xsl:otherwise><xsl:value-of select="$cible"/></xsl:otherwise>
     </xsl:choose>
   </xsl:template>
@@ -464,16 +471,12 @@
       <xsl:attribute name="href">
         <xsl:call-template name="christofle-index-href">
           <xsl:with-param name="cible" select="substring-after(@ref, '#')"/>
+          <xsl:with-param name="lettre" select="substring-after(@corresp, '#')"/>
         </xsl:call-template>
       </xsl:attribute>
       <xsl:apply-templates/>
     </a>
   </xsl:template>
-
-  <!-- Recensement des fac-similés réellement servis, relevé sur les pages de notes
-       de l'édition Élec et vérifié dans dots-vue/public/images/christofle/ ;
-       même dispositif que saint-denis-images-locales.xml. -->
-  <xsl:variable name="christofle-images-locales" select="document('christofle-images-locales.xml')/images"/>
 
   <!-- L'ancienne edition affichait les folios sous la forme [77 v°]. -->
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:pb" priority="10">
@@ -495,35 +498,38 @@
          échangeait l'image au clic ; 113 minutes ont deux folios ou plus.
          2026-09-24 : le nom du fichier n'est plus calculé à partir de @n. Il est lu
          dans @facs — posé dans la source d'après les 387 pages de notes du site
-         historique — puis confronté au recensement christofle-images-locales.xml.
-         Un <pb> sans @facs, ou dont le fichier n'est pas recensé, n'affiche pas
-         d'image plutôt que d'ouvrir un lien mort : c'est le cas du folio 82 cité
+         historique.
+         2026-09-25 : @facs pilote seul l'affichage. Le recensement local
+         christofle-images-locales.xml, qui confrontait chaque @facs aux JPEG du
+         dossier servi, a été supprimé : les images de christofle partent sur
+         Nakala, un garde-fou sur le contenu d'un dossier local n'a plus d'objet.
+         A disparu avec lui le repli qui reconstruisait le nom du fichier depuis
+         @n par format-number : plus rien ici n'invente de nom de fichier.
+         Un <pb> sans @facs n'affiche pas d'image : c'est le cas du folio 82 cité
          dans le paratexte « Commancement d'année », que l'Élec n'illustre pas non
-         plus. -->
+         plus.
+         Le libellé du folio est celui de l'Élec (« 56 v° », « 57 r° ») : il est lu
+         dans @n, où le recto est implicite, et non dans le nom du fichier.
+         La vignette est ce même fichier suffixé « _ptt », convention du dossier
+         d'images de l'édition. -->
     <xsl:variable name="facs-file" select="substring-after(@facs, 'images/sources/')"/>
-    <!-- Repli pour une base non encore réingérée : tant que la source servie ne
-         porte pas @facs, on retombe sur le nom déduit de @n. Ce repli n'invente
-         rien — il est filtré par le recensement ci-dessous, et le relevé des 387
-         pages de notes de l'Élec a vérifié que pour les 510 <pb> des minutes le
-         nom déduit est exactement le fichier servi par le site. -->
-    <xsl:variable name="facs-replie"
-      select="concat('FRAD045_3E10144_f',
-                     format-number(number(substring-before(concat(@n, 'v'), 'v')), '000'),
-                     '_',
-                     substring('vr', 1 + number(not(substring(@n, string-length(@n)) = 'v')), 1),
-                     '.jpg')"/>
-    <xsl:variable name="folio"
-      select="($christofle-images-locales/folio[@fichier = $facs-file]
-               | $christofle-images-locales/folio[not($facs-file != '')][@fichier = $facs-replie])[1]"/>
-    <xsl:if test="$folio">
-      <xsl:variable name="folio-label" select="$folio/@libelle"/>
+    <xsl:if test="$facs-file != ''">
+      <xsl:variable name="folio-label">
+        <xsl:choose>
+          <xsl:when test="substring(@n, string-length(@n)) = 'r' or substring(@n, string-length(@n)) = 'v'">
+            <xsl:value-of select="substring(@n, 1, string-length(@n) - 1)"/><xsl:text> </xsl:text><xsl:value-of select="substring(@n, string-length(@n))"/><xsl:text>°</xsl:text>
+          </xsl:when>
+          <xsl:otherwise><xsl:value-of select="@n"/><xsl:text> r°</xsl:text></xsl:otherwise>
+        </xsl:choose>
+      </xsl:variable>
+      <xsl:variable name="facs-vignette" select="concat(substring-before($facs-file, '.jpg'), '_ptt.jpg')"/>
       <details class="christofle-facsimile">
         <summary title="Afficher en grand le fac-similé du folio {$folio-label}">
-          <img class="christofle-facsimile-vignette" src="/images/christofle/vignettes/{$folio/@vignette}" alt="Fac-similé du folio {$folio-label}"/>
+          <img class="christofle-facsimile-vignette" src="/images/christofle/vignettes/{$facs-vignette}" alt="Fac-similé du folio {$folio-label}"/>
           <span class="christofle-facsimile-ouvrir">Fol. <xsl:value-of select="$folio-label"/> — agrandir le fac-similé</span>
           <span class="christofle-facsimile-fermer">Fol. <xsl:value-of select="$folio-label"/> — réduire le fac-similé</span>
         </summary>
-        <img class="christofle-facsimile-image" src="/images/christofle/sources/{$folio/@fichier}" alt="Fac-similé du folio {$folio-label}" loading="lazy"/>
+        <img class="christofle-facsimile-image" src="/images/christofle/sources/{$facs-file}" alt="Fac-similé du folio {$folio-label}" loading="lazy"/>
         <span class="christofle-facsimile-legende">Archives départementales du Loiret, 3E 10144, fol. <xsl:value-of select="$folio-label"/></span>
       </details>
     </xsl:if>
@@ -854,6 +860,7 @@
               <xsl:attribute name="href">
                 <xsl:call-template name="christofle-index-href">
                   <xsl:with-param name="cible" select="substring-after(normalize-space(@target), '#')"/>
+                  <xsl:with-param name="lettre" select="substring-after(@corresp, '#')"/>
                 </xsl:call-template>
               </xsl:attribute>
               <xsl:value-of select="normalize-space(.)"/>

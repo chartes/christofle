@@ -24,13 +24,18 @@ Cette branche suit l’arborescence attendue par DoTS.
 ```
 data/        les fichiers TEI servis par BaseX
 metadata/    dots_metadata_mapping.xml et collection.tsv
-transform/   la feuille XSL du corpus et son fichier compagnon
+transform/   la feuille XSL du corpus
 README.md
 ```
 
 ### `data/`
 
 - `christofle.xml` — le document TEI unique du corpus (index et arguments de mois précalculés).
+
+La source se suffit à elle-même : aucun fichier annexe n’est nécessaire à son rendu.
+
+- Les 510 `<pb>` des minutes portent leur fac-similé dans `@facs` ; le seul `<pb n="82">` du paratexte « Commancement d’année » est volontairement nu, comme dans l’édition Élec.
+- Les renvois vers une entrée de l’index des lieux et personnes — `persName/@ref`, `placeName/@ref`, `orgName/@ref` et les renvois « voir » internes à l’index — portent à côté de leur `@ref` (ou de leur `@target`) un `@corresp="#idx-lettre-X"` qui nomme la division-lettre où l’entrée vit réellement. C’est ce qui permet à la feuille de viser « page de la lettre + ancre » depuis un fragment servi seul, où l’index n’est pas présent.
 
 ### `metadata/`
 
@@ -41,8 +46,7 @@ Le corpus ne comporte **pas** de fichier de métadonnées au niveau document : l
 
 ### `transform/`
 
-- `christofle.xsl` — la feuille de transformation TEI → HTML du corpus (minutes, apparat, index, folios, fac-similés).
-- `christofle-index-lettres.xml` — fichier compagnon lu par la feuille via `document('christofle-index-lettres.xml')` ; il doit rester à côté de la XSL.
+- `christofle.xsl` — la feuille de transformation TEI → HTML du corpus (minutes, apparat, index, folios, fac-similés). Elle n’appelle aucun `document()` : tout ce qu’elle affiche est lu dans le TEI servi.
 
 ### Ce qui ne figure pas ici
 
