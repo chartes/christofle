@@ -197,13 +197,22 @@
        #days-list de notes/note-001.html) : les douze mois, puis les jours du
        mois courant. Précalculée par build_indexes.py dans chaque minute, donc
        disponible même quand le fragment est servi seul. Aucun JavaScript. -->
+  <!-- 2026-09-29 : troisième barre, celle des notes du jour (#mins-list de
+       l'ÉLEC, présente sur ses 387 pages de notes) : « Note 30 << Note 55 |
+       Note 56 >> Note 31 » — dernière note du jour précédent, notes du jour,
+       première note du jour suivant, dans l'ordre des dates, mois franchis.
+       Le fragment d'une minute ne contient pas ses voisines : la liste est
+       donc portée, comme les deux autres barres, par l'argument note-nav du
+       TEI (<list type="minutes">, ref/@type previous | minute | next). Règle
+       vérifiée sur les 387 pages ÉLEC moissonnées : 0 écart. -->
   <xsl:template match="tei:argument[@ana = '#note-nav']" priority="12">
-    <nav class="christofle-note-nav" aria-label="Navigation par mois et par jour">
+    <nav class="christofle-note-nav" aria-label="Navigation par mois, par jour et par note">
       <xsl:for-each select="tei:list">
         <ul>
           <xsl:attribute name="class">
             <xsl:choose>
               <xsl:when test="@type = 'months'">months-list</xsl:when>
+              <xsl:when test="@type = 'minutes'">mins-list</xsl:when>
               <xsl:otherwise>days-list</xsl:otherwise>
             </xsl:choose>
           </xsl:attribute>
@@ -215,9 +224,18 @@
                  xsl:sort étant stable, son ordre reste celui de la source. -->
             <xsl:sort select="tei:ref[@type = 'day']/@n"/>
             <li>
-              <xsl:if test="tei:ref/@ana = 'selected'">
-                <xsl:attribute name="class">selected</xsl:attribute>
-              </xsl:if>
+              <xsl:choose>
+                <xsl:when test="tei:ref/@ana = 'selected'">
+                  <xsl:attribute name="class">selected</xsl:attribute>
+                </xsl:when>
+                <xsl:when test="tei:ref/@type = 'previous'">
+                  <xsl:attribute name="class">mins-prev</xsl:attribute>
+                </xsl:when>
+                <xsl:when test="tei:ref/@type = 'next'">
+                  <xsl:attribute name="class">mins-next</xsl:attribute>
+                  <span class="sep"> &gt;&gt; </span>
+                </xsl:when>
+              </xsl:choose>
               <a class="internalLink"
                  href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                 <xsl:choose>
@@ -228,6 +246,9 @@
                   <xsl:otherwise><xsl:value-of select="normalize-space(tei:ref)"/></xsl:otherwise>
                 </xsl:choose>
               </a>
+              <xsl:if test="tei:ref/@type = 'previous'">
+                <span class="sep"> &lt;&lt; </span>
+              </xsl:if>
             </li>
           </xsl:for-each>
         </ul>
