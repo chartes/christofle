@@ -185,6 +185,12 @@
             </xsl:choose>
           </xsl:attribute>
           <xsl:for-each select="tei:item">
+            <!-- 2026-09-29 : jours triés par date (@n = AAAA-MM-JJ), comme l'ÉLEC.
+                 L'argument les liste dans l'ordre des minutes : en janvier, le
+                 21 (minute-055, copiée après le 31 dans le registre) venait
+                 après le 31. La barre des mois n'a pas de @n : clé vide, et
+                 xsl:sort étant stable, son ordre reste celui de la source. -->
+            <xsl:sort select="tei:ref[@type = 'day']/@n"/>
             <li>
               <xsl:if test="tei:ref/@ana = 'selected'">
                 <xsl:attribute name="class">selected</xsl:attribute>
@@ -315,7 +321,11 @@
       <nav class="jours-nav" aria-label="Filtrer par jour">
         <span class="jours-label">Jours :</span>
         <label class="jour-link jour-all" for="jf-{$mid}-all">Tous</label>
+        <!-- 2026-09-29 : jours dans l'ordre des dates (voir la barre des jours
+             des minutes) ; le premier de chaque jour reste choisi dans l'ordre
+             du document (preceding-sibling), le tri ne joue que sur l'affichage. -->
         <xsl:for-each select="$minutes">
+          <xsl:sort select="tei:date/@when"/>
           <xsl:variable name="when" select="tei:date/@when"/>
           <xsl:if test="not(preceding-sibling::tei:item[tei:date/@when = $when])">
             <label class="jour-link" for="jf-{$mid}-{$when}" title="{normalize-space(tei:date)}">
@@ -327,6 +337,7 @@
 
       <div class="jours-index">
         <xsl:for-each select="$minutes">
+          <xsl:sort select="tei:date/@when"/>
           <xsl:variable name="when" select="tei:date/@when"/>
           <xsl:if test="not(preceding-sibling::tei:item[tei:date/@when = $when])">
             <section class="jour-group jg-{$when}" id="jour-{$when}">
