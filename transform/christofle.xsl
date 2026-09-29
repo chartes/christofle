@@ -240,15 +240,18 @@
        donc ici la première partie, dont build_indexes.py a placé une copie dans
        l'<argument> — les parties elles-mêmes, unités citables, sont retirées du
        fragment servi. La liste tei:list reste disponible dans le TEI si un
-       sommaire devait être réintroduit. -->
+       sommaire devait être réintroduit.
+       2026-09-29 : la copie de la première partie n'est plus une <div> (interdite
+       dans <argument> par tei_all) mais un <floatingText type="first-part">
+       dont le <body> porte le titre et les paragraphes ; rendu inchangé. -->
   <xsl:template match="tei:argument[@ana = '#intro-index']" priority="12">
     <section class="christofle-intro">
       <h1 class="intro-head">
         <xsl:value-of select="normalize-space(tei:head)"/>
         <xsl:text> &gt; </xsl:text>
-        <xsl:value-of select="normalize-space(tei:div[@type = 'first-part']/tei:head)"/>
+        <xsl:value-of select="normalize-space(tei:floatingText[@type = 'first-part']/tei:body/tei:head)"/>
       </h1>
-      <xsl:apply-templates select="tei:div[@type = 'first-part']/node()[not(self::tei:head)]"/>
+      <xsl:apply-templates select="tei:floatingText[@type = 'first-part']/tei:body/node()[not(self::tei:head)]"/>
     </section>
   </xsl:template>
 
