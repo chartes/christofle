@@ -524,8 +524,63 @@
     </xsl:choose>
   </xsl:template>
 
+  <!-- 2026-09-29 : infobulle du lien d'index = VEDETTE de l'index, comme l'ÉLEC
+       (title="Anxeau, Perrin" sur « Perrin Anxeau » ; « Belon, ép. de Jean
+       Mignon »), et non plus la forme du texte.
+       La vedette vit dans l'index, hors du fragment de la minute : la feuille
+       relit donc le TEI complet, selon le dispositif de Montferrand
+       (transform/comptes.xsl, variable $full) — pas de fichier engendré, pas
+       d'interrogation de l'API (qui s'interbloquerait avec la requête en cours) :
+         - déployée, christofle.xml est posé à côté de la feuille, copie exacte
+           du fichier versé dans BaseX ;
+         - dans le dépôt, il est lu dans ../data/.
+       La vedette est écrite par les modèles mêmes de la page d'index (mode
+       christofle-index-name, note de relation, placeName en mode
+       christofle-index-inline) : infobulle et index ne peuvent pas diverger.
+       Fichier introuvable ou cible absente : repli sur la forme du texte
+       (comportement antérieur). Variable globale : évaluée seulement quand une
+       page contient un lien d'index. -->
+  <xsl:variable name="chr-full"
+    select="document((for $u in ('christofle.xml', '../data/christofle.xml')
+                      return resolve-uri($u, static-base-uri()))[doc-available(.)][1])"/>
+
+  <xsl:key name="chr-idx-id" match="tei:person | tei:place | tei:org" use="@xml:id"/>
+
+  <xsl:template match="tei:person" mode="christofle-vedette">
+    <xsl:apply-templates select="tei:persName[1]" mode="christofle-index-name">
+      <xsl:with-param name="variantes" select="tei:persName[position() > 1]"/>
+    </xsl:apply-templates>
+    <xsl:if test="tei:note[@type = 'relation']">
+      <xsl:text>, </xsl:text>
+      <xsl:value-of select="normalize-space(tei:note[@type = 'relation'])"/>
+    </xsl:if>
+  </xsl:template>
+
+  <xsl:template match="tei:place" mode="christofle-vedette">
+    <xsl:for-each select="tei:placeName">
+      <xsl:if test="position() > 1"><xsl:text> / </xsl:text></xsl:if>
+      <xsl:apply-templates select="." mode="christofle-index-inline"/>
+    </xsl:for-each>
+  </xsl:template>
+
+  <xsl:template match="tei:org" mode="christofle-vedette">
+    <xsl:value-of select="normalize-space(tei:orgName[1])"/>
+  </xsl:template>
+
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:persName[@ref[starts-with(., '#p-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:placeName[@ref[starts-with(., '#l-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:orgName[@ref[starts-with(., '#o-')]]" priority="10">
-    <a class="linkToIndex" title="{normalize-space(.)}">
+    <xsl:variable name="cible" select="substring-after(@ref, '#')"/>
+    <xsl:variable name="vedette">
+      <xsl:for-each select="$chr-full">
+        <xsl:apply-templates select="key('chr-idx-id', $cible)[1]" mode="christofle-vedette"/>
+      </xsl:for-each>
+    </xsl:variable>
+    <a class="linkToIndex">
+      <xsl:attribute name="title">
+        <xsl:choose>
+          <xsl:when test="normalize-space($vedette) != ''"><xsl:value-of select="normalize-space($vedette)"/></xsl:when>
+          <xsl:otherwise><xsl:value-of select="normalize-space(.)"/></xsl:otherwise>
+        </xsl:choose>
+      </xsl:attribute>
       <xsl:attribute name="href">
         <xsl:call-template name="christofle-index-href">
           <xsl:with-param name="cible" select="substring-after(@ref, '#')"/>
