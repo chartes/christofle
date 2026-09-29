@@ -864,6 +864,12 @@
   <!-- placeName avec <term> inline : « Bannier (porte) » -->
   <xsl:template match="tei:term" mode="christofle-index-inline"><span class="term"><xsl:value-of select="normalize-space(.)"/></span><xsl:text> </xsl:text></xsl:template>
   <xsl:template match="text()" mode="christofle-index-inline"><xsl:value-of select="."/></xsl:template>
+  <!-- 2026-09-29 : surnom d'un lieu, « La Sauverie, dit La Roigelerie » comme
+       l'ÉLEC. Le TEI colle <addName> au nom (« La Sauverie<addName>dit … ») :
+       sans ce modèle la vedette sortait « La Sauveriedit La Roigelerie ».
+       2 vedettes : l-0398, l-0207 (« Nerront (clos de) , dit le coin Chabot »,
+       espace avant la virgule compris, tel que sur l'ÉLEC). -->
+  <xsl:template match="tei:addName" mode="christofle-index-inline"><xsl:text>, </xsl:text><span class="addName"><xsl:value-of select="normalize-space(.)"/></span></xsl:template>
 
   <!-- location : departement, canton, settlement… séparés par des virgules -->
   <xsl:template match="tei:location/*" mode="christofle-index-loc">
