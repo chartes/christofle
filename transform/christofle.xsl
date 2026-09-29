@@ -50,11 +50,34 @@
        conserve tel quel : la bulle s'ajoute, elle ne remplace rien. -->
   <xsl:key name="chr-note-by-id" match="tei:note[@xml:id]" use="@xml:id"/>
 
+  <!-- 2026-09-29 : appel d'apparat À L'INTÉRIEUR d'un nom lié à l'index
+       (« Jehan<sup>1</sup> Mignon », 24 appels dans 21 minutes). Un <a> dans le
+       <a class="linkToIndex"> est interdit en HTML : le navigateur fermait le
+       lien d'index avant l'appel, et « Mignon » sortait du lien. Comme l'ÉLEC
+       (<span class="noteAnchor">), l'appel y devient un <span> : même classe,
+       même id (cible du retour de la note), même bulle @data-tip ; tabindex
+       pour garder la bulle au clavier. Seul le saut vers la note en pied est
+       perdu, le clic allant au lien d'index. -->
   <xsl:template match="tei:ref[@type='note']">
     <xsl:variable name="corps" select="key('chr-note-by-id', substring-after(@target, '#'))[1]"/>
-    <a class="noteref"
-       id="{@xml:id}"
-       href="#{substring-after(@target, '#')}">
+    <xsl:variable name="dans-lien"
+      select="ancestor::tei:text[starts-with(@xml:id, 'minute-')]
+              and (ancestor::tei:persName[starts-with(@ref, '#p-')]
+                   or ancestor::tei:placeName[starts-with(@ref, '#l-')]
+                   or ancestor::tei:orgName[starts-with(@ref, '#o-')])"/>
+    <xsl:variable name="balise">
+      <xsl:choose>
+        <xsl:when test="$dans-lien">span</xsl:when>
+        <xsl:otherwise>a</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:element name="{$balise}">
+      <xsl:attribute name="class">noteref</xsl:attribute>
+      <xsl:attribute name="id"><xsl:value-of select="@xml:id"/></xsl:attribute>
+      <xsl:choose>
+        <xsl:when test="$dans-lien"><xsl:attribute name="tabindex">0</xsl:attribute></xsl:when>
+        <xsl:otherwise><xsl:attribute name="href">#<xsl:value-of select="substring-after(@target, '#')"/></xsl:attribute></xsl:otherwise>
+      </xsl:choose>
       <xsl:if test="$corps">
         <!-- « 1. La lettre J est decoree d'entrelacs. » : le numero precedait le
              texte dans le <span class="apparatusNote"> de l'ancien site. -->
@@ -63,7 +86,7 @@
         </xsl:attribute>
       </xsl:if>
       <sup><xsl:call-template name="note-n"/></sup>
-    </a>
+    </xsl:element>
   </xsl:template>
 
   <!--
