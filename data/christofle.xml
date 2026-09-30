@@ -155,7 +155,10 @@
             </msDesc>
          </sourceDesc>
       </fileDesc>
-      <encodingDesc><classDecl><taxonomy xml:id="christofle-blocs"><category xml:id="intro-index"><catDesc>Sommaire de l’introduction.</catDesc></category><category xml:id="notes-index"><catDesc>Sommaire des notes.</catDesc></category><category xml:id="month-index"><catDesc>Sommaire d’un mois.</catDesc></category><category xml:id="note-nav"><catDesc>Barre de navigation par mois et par jour.</catDesc></category></taxonomy></classDecl>
+      <encodingDesc>
+         <projectDesc>
+            <p>Édition électronique de « L’année 1437 dans la pratique de Pierre Christofle, notaire du Châtelet d’Orléans ».</p>
+         </projectDesc><classDecl><taxonomy xml:id="christofle-blocs"><category xml:id="intro-index"><catDesc>Sommaire de l’introduction.</catDesc></category><category xml:id="notes-index"><catDesc>Sommaire des notes.</catDesc></category><category xml:id="month-index"><catDesc>Sommaire d’un mois.</catDesc></category><category xml:id="note-nav"><catDesc>Barre de navigation par mois et par jour.</catDesc></category></taxonomy></classDecl>
          <refsDecl>
             <!-- Le site Élec distingue ces pages : DoTS les expose désormais
                  chacune comme une ressource citable du sommaire. -->
@@ -215,6 +218,10 @@
          <change who="#FC">
             <date when="2016-09">juin-septembre 2016</date>
             <desc>corrections ultimes du fichier TEI et des programmes de génération du site, ajout d’une page d’information sur les aspects techniques du projet, mise en ligne du fichier TEI pour téléchargement</desc>
+         </change>
+         <change>
+            <date when="2026-09">septembre 2026</date>
+            <desc>migration vers DoTS (École nationale des chartes) : identifiant de ressource, autorités, unités citables, minutes regroupées par mois, index découpé par lettre et relié au texte, index des types d’actes, fac-similés, barres de navigation par mois, jour et note, conformité TEI ; texte édité inchangé</desc>
          </change>
       </revisionDesc>
    </teiHeader>
