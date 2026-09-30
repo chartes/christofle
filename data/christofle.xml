@@ -95,36 +95,38 @@
             </publisher>
             <date>mai 2015-....</date>
             <availability status="restricted">
-               <p>L’École nationale des chartes et le GREPSOMM mettent à disposition cette ressource
-                  électronique structurée, protégée par le code de la propriété intellectuelle sur
-                  les bases de données (L341-1), selon les termes de la licence Creative Commons :
-                  « Paternité - Pas d’Utilisation Commerciale - Pas de Modification ;  2.0 France ».
-                  Cette licence est disponible en ligne
-                  (<ref target="http://creativecommons.org/licenses/by-nc-nd/2.0/fr/">http://creativecommons.org/licenses/by-nc-nd/2.0/fr/</ref> ou par courrier postal à
-                  Creative Commons, 171 Second Street, Suite 300, San Francisco, California 94105,
-                  USA.</p>
-               <p>Paternité : l’École nationale des chartes et le GREPSOMM demandent que toute
-                  publication dérivée de cette ressource électronique comporte : 1) le nom de
-                  l’École nationale des chartes et du GREPSOMM, et pour les publications
-                  électroniques, leur logo 2) les noms des auteurs de l’édition 3) l’URI permettant d’accéder à la page citée, ou à défaut à la page d’accueil de ce site web 3) la date du fichier source
-                  utilisé.</p>
-               <p>Pas d’Utilisation Commerciale : L’École nationale des chartes et le GREPSOMM
-                  souhaitent encourager l’utilisation et l’amélioration de ses ressources
-                  électroniques, pour les intérêts de l’enseignement et de la recherche. Toute
-                  autorisation au-delà du champ de cette licence doit être obtenue auprès de l’École
-                  nationale des chartes ou du GREPSOMM.</p>
-               <p>Pas de Modification : Afin de mieux servir la communauté scientifique, l’École
-                  nationale des chartes et le GREPSOMM s’engagent à conserver et à toujours offrir
-                  publiquement la version la plus à jour de ses ressources électroniques par une URI
-                  pérenne. Ils s’engagent à les corriger et à les améliorer, à intégrer les
-                  contributions qui lui sont soumises (après validation par un comité scientifique),
-                  et à référencer l’origine de ces contributions. Toute modification de la ressource
-                  qui ne serait pas reversée à la version de référence sous l’autorité éditoriale de
-                  l’École nationale des chartes et du GREPSOMM doit faire l’objet de l’accord de
-                  ceux-ci, afin de ne pas disperser les contributions et de permettre les meilleures
-                  conditions possibles de collaboration scientifique.</p>
-               <p>Tout litige soulevé par le non respect des termes de cette licence sera soumis à
-                  la juridiction des tribunaux de Paris.</p>
+               <licence target="http://creativecommons.org/licenses/by-nc-nd/2.0/fr/">
+                  <p>L’École nationale des chartes et le GREPSOMM mettent à disposition cette ressource
+                     électronique structurée, protégée par le code de la propriété intellectuelle sur
+                     les bases de données (L341-1), selon les termes de la licence Creative Commons :
+                     « Paternité - Pas d’Utilisation Commerciale - Pas de Modification ;  2.0 France ».
+                     Cette licence est disponible en ligne
+                     (<ref target="http://creativecommons.org/licenses/by-nc-nd/2.0/fr/">http://creativecommons.org/licenses/by-nc-nd/2.0/fr/</ref> ou par courrier postal à
+                     Creative Commons, 171 Second Street, Suite 300, San Francisco, California 94105,
+                     USA.</p>
+                  <p>Paternité : l’École nationale des chartes et le GREPSOMM demandent que toute
+                     publication dérivée de cette ressource électronique comporte : 1) le nom de
+                     l’École nationale des chartes et du GREPSOMM, et pour les publications
+                     électroniques, leur logo 2) les noms des auteurs de l’édition 3) l’URI permettant d’accéder à la page citée, ou à défaut à la page d’accueil de ce site web 3) la date du fichier source
+                     utilisé.</p>
+                  <p>Pas d’Utilisation Commerciale : L’École nationale des chartes et le GREPSOMM
+                     souhaitent encourager l’utilisation et l’amélioration de ses ressources
+                     électroniques, pour les intérêts de l’enseignement et de la recherche. Toute
+                     autorisation au-delà du champ de cette licence doit être obtenue auprès de l’École
+                     nationale des chartes ou du GREPSOMM.</p>
+                  <p>Pas de Modification : Afin de mieux servir la communauté scientifique, l’École
+                     nationale des chartes et le GREPSOMM s’engagent à conserver et à toujours offrir
+                     publiquement la version la plus à jour de ses ressources électroniques par une URI
+                     pérenne. Ils s’engagent à les corriger et à les améliorer, à intégrer les
+                     contributions qui lui sont soumises (après validation par un comité scientifique),
+                     et à référencer l’origine de ces contributions. Toute modification de la ressource
+                     qui ne serait pas reversée à la version de référence sous l’autorité éditoriale de
+                     l’École nationale des chartes et du GREPSOMM doit faire l’objet de l’accord de
+                     ceux-ci, afin de ne pas disperser les contributions et de permettre les meilleures
+                     conditions possibles de collaboration scientifique.</p>
+                  <p>Tout litige soulevé par le non respect des termes de cette licence sera soumis à
+                     la juridiction des tribunaux de Paris.</p>
+               </licence>
             </availability>
          </publicationStmt>
          <seriesStmt>
