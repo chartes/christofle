@@ -548,9 +548,6 @@
        Fichier introuvable ou cible absente : repli sur la forme du texte
        (comportement antérieur). Variable globale : évaluée seulement quand une
        page contient un lien d'index. -->
-  <xsl:variable name="chr-full"
-    select="document((for $u in ('christofle.xml', '../data/christofle.xml')
-                      return resolve-uri($u, static-base-uri()))[doc-available(.)][1])"/>
 
   <xsl:key name="chr-idx-id" match="tei:person | tei:place | tei:org" use="@xml:id"/>
 
@@ -577,11 +574,8 @@
 
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:persName[@ref[starts-with(., '#p-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:placeName[@ref[starts-with(., '#l-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:orgName[@ref[starts-with(., '#o-')]]" priority="10">
     <xsl:variable name="cible" select="substring-after(@ref, '#')"/>
-    <xsl:variable name="vedette">
-      <xsl:for-each select="$chr-full">
-        <xsl:apply-templates select="key('chr-idx-id', $cible)[1]" mode="christofle-vedette"/>
-      </xsl:for-each>
-    </xsl:variable>
+    <!-- 2026-10-04 (C9) : la vedette est écrite en @n dans le TEI ; plus de lecture du TEI complet. -->
+    <xsl:variable name="vedette" select="string(@n)"/>
     <a class="linkToIndex">
       <xsl:attribute name="title">
         <xsl:choose>
