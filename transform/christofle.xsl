@@ -5,7 +5,14 @@
   xmlns:tei="http://www.tei-c.org/ns/1.0"
   exclude-result-prefixes="tei">
 
-  <xsl:import href="../hteiml/xsl/tei2html.xsl"/>
+  <xsl:import href="../../renderers/hteiml/xsl/tei2html.xsl"/>
+
+  <!-- 2026-10-04 (C7) : chemins selon le serveur. Dans le dépôt, l'application est
+       servie sous /elec/ et l'API sous /dots/api/dts/ (dev.chartes.psl.eu) ; la copie
+       locale de dots-clean garde '' et l'API locale. Seules ces deux valeurs et
+       l'import de hteiml diffèrent entre les deux versions. -->
+  <xsl:variable name="elec-base" select="'/elec'"/>
+  <xsl:variable name="dts-api-base" select="'/dots/api/dts/'"/>
 
   <!--
     Rendu racine DTS :
@@ -137,7 +144,7 @@
       <xsl:for-each select="tei:list[@type='act-types']/tei:item">
         <xsl:sort select="tei:label"/>
         <article class="chr-type">
-          <h3 class="chr-type-head">
+          <h2 class="chr-type-head">
             <!-- L'ÉLEC affiche « Accord », « Contrat d'apprentissage » : seule la
                  première lettre est capitalisée. text-transform:capitalize en CSS
                  donnerait « Contrat D'apprentissage », d'où la bascule ici. -->
@@ -151,7 +158,7 @@
               <xsl:value-of select="count(tei:list/tei:item/tei:ref)"/>
               <xsl:text>)</xsl:text>
             </span>
-          </h3>
+          </h2>
 
           <ul class="chr-acte-list">
             <xsl:for-each select="tei:list/tei:item">
@@ -159,7 +166,7 @@
               <li>
                 <a title="Consulter la note"
                    class="internalLink"
-                   href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                   href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                   <xsl:value-of select="tei:ref"/>
                 </a>
                 <xsl:if test="tei:date">
@@ -237,7 +244,7 @@
                 </xsl:when>
               </xsl:choose>
               <a class="internalLink"
-                 href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                 href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                 <xsl:choose>
                   <!-- barre des jours : le quantième suffit, le mois est au-dessus -->
                   <xsl:when test="tei:ref/@type = 'day'">
@@ -318,7 +325,7 @@
   <!-- Lien de téléchargement de l'édition : export TEI live DoTS. -->
   <xsl:template match="tei:ref[starts-with(@target, 'telechargement')]" priority="12">
     <a class="christofle-download" download="christofle_1437.xml"
-       href="http://127.0.0.1:8080/api/dts/document?resource=christofle_1437&amp;mediaType=xml">
+       href="{$dts-api-base}document?resource=christofle_1437&amp;mediaType=xml">
       <xsl:apply-templates/>
     </a>
   </xsl:template>
@@ -335,7 +342,7 @@
     </xsl:variable>
     <xsl:choose>
       <xsl:when test="$cible != ''">
-        <a class="internalLink" href="/christofle/document/christofle_1437?refId={$cible}">
+        <a class="internalLink" href="{$elec-base}/christofle/document/christofle_1437?refId={$cible}">
           <xsl:apply-templates/>
         </a>
       </xsl:when>
@@ -390,7 +397,7 @@
               <xsl:for-each select="$minutes[tei:date/@when = $when]">
                 <div class="jour-note">
                   <a class="internalLink note-link"
-                     href="/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                     href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                     <span class="note-num"><xsl:value-of select="tei:ref"/>.</span>
                     <xsl:text> </xsl:text>
                     <xsl:variable name="nature" select="normalize-space(tei:term[@type = 'natureJuridique'][1])"/>
@@ -508,6 +515,7 @@
   <xsl:template name="christofle-index-href">
     <xsl:param name="cible"/>
     <xsl:param name="lettre"/>
+    <xsl:value-of select="$elec-base"/>
     <xsl:text>/christofle/document/christofle_1437?refId=</xsl:text>
     <xsl:choose>
       <!-- Entrée connue : page de la lettre + ancre, comme l'ÉLEC. -->
@@ -638,11 +646,11 @@
       <xsl:variable name="facs-vignette" select="concat(substring-before($facs-file, '.jpg'), '_ptt.jpg')"/>
       <details class="christofle-facsimile">
         <summary title="Afficher en grand le fac-similé du folio {$folio-label}">
-          <img class="christofle-facsimile-vignette" src="/images/christofle/vignettes/{$facs-vignette}" alt="Fac-similé du folio {$folio-label}"/>
+          <img class="christofle-facsimile-vignette" src="{$elec-base}/images/christofle/vignettes/{$facs-vignette}" alt="Fac-similé du folio {$folio-label}"/>
           <span class="christofle-facsimile-ouvrir">Fol. <xsl:value-of select="$folio-label"/> — agrandir le fac-similé</span>
           <span class="christofle-facsimile-fermer">Fol. <xsl:value-of select="$folio-label"/> — réduire le fac-similé</span>
         </summary>
-        <img class="christofle-facsimile-image" src="/images/christofle/sources/{$facs-file}" alt="Fac-similé du folio {$folio-label}" loading="lazy"/>
+        <img class="christofle-facsimile-image" src="{$elec-base}/images/christofle/sources/{$facs-file}" alt="Fac-similé du folio {$folio-label}" loading="lazy"/>
         <span class="christofle-facsimile-legende">Archives départementales du Loiret, 3E 10144, fol. <xsl:value-of select="$folio-label"/></span>
       </details>
     </xsl:if>
@@ -651,7 +659,7 @@
   <!-- Les images de l'introduction sont désormais servies par le répertoire
        statique du projet DoTS, plutôt que par les chemins relatifs Élec. -->
   <xsl:template match="tei:graphic" priority="10">
-    <img class="christofle-image" src="/images/christofle/{substring-after(@url, 'images/')}" alt="{normalize-space(../tei:figDesc)}"/>
+    <img class="christofle-image" src="{$elec-base}/images/christofle/{substring-after(@url, 'images/')}" alt="{normalize-space(../tei:figDesc)}"/>
   </xsl:template>
 
   <!-- ===================================================================
@@ -1017,7 +1025,7 @@
     <xsl:variable name="mid" select="substring-after($head, '#minute-')"/>
     <xsl:if test="$mid != ''">
       <xsl:if test="not($first)">, </xsl:if>
-      <a class="internalLink" title="Consulter la minute" href="/christofle/document/christofle_1437?refId=minute-{$mid}">
+      <a class="internalLink" title="Consulter la minute" href="{$elec-base}/christofle/document/christofle_1437?refId=minute-{$mid}">
         <xsl:value-of select="number($mid)"/>
       </a>
     </xsl:if>
@@ -1037,19 +1045,19 @@
        Table et bloc produits par dots-autopilot/scripts/d5_legacy_links_fix.py. -->
   <!-- portail ELEC -->
   <xsl:template match="tei:title[../tei:idno[@type = 'URI'][normalize-space(.) = 'http://elec.enc.sorbonne.fr' or normalize-space(.) = 'http://elec.enc.sorbonne.fr/']]" priority="14">
-    <a class="title d5-local" href="/"><xsl:apply-templates/></a>
+    <a class="title d5-local" href="{$elec-base}/"><xsl:apply-templates/></a>
   </xsl:template>
   <!-- renvoi bibliographique vers cette edition -->
   <xsl:template match="tei:ref[@target = 'http://elec.enc.sorbonne.fr/christofle/']" priority="14">
-    <a class="ref d5-local" href="/christofle"><xsl:apply-templates/></a>
+    <a class="ref d5-local" href="{$elec-base}/christofle"><xsl:apply-templates/></a>
   </xsl:template>
   <!-- 2026-09-12 : dernier renvoi vers l'ancien site, dans l'EXEMPLE DE CITATION du teiHeader
        (« En ligne : http://elec.enc.sorbonne.fr/christofle/notes/note-136.html »). La page existe
        ici sous `minute-136` (vérifié dans la navigation DTS : 411 unités, dont minute-136). Même
        règle que le reste du bloc D5 : le TEXTE reste mot pour mot — c'est l'adresse de la
        publication d'origine, citée comme telle — et seule la cible devient la route locale. -->
-  <xsl:template match="tei:ref[normalize-space(@target) = 'http://elec.enc.sorbonne.fr/christofle/notes/note-136.html']" priority="15">
-    <a class="ref d5-local" href="/christofle/document/christofle_1437?refId=minute-136"><xsl:apply-templates/></a>
+  <xsl:template match="tei:note[@type = 'onLineAccess']/tei:ref[normalize-space(@target) = '#minute-136'] | tei:ref[normalize-space(@target) = 'http://elec.enc.sorbonne.fr/christofle/notes/note-136.html']" priority="15">
+    <a class="ref d5-local" href="{$elec-base}/christofle/document/christofle_1437?refId=minute-136"><xsl:apply-templates/></a>
   </xsl:template>
   <!-- D5-FIN -->
 

@@ -46,7 +46,7 @@ Le corpus ne comporte **pas** de fichier de métadonnées au niveau document : l
 
 ### `transform/`
 
-- `christofle.xsl` — la feuille de transformation TEI → HTML du corpus (minutes, apparat, index, folios, fac-similés). Elle n’appelle aucun `document()` : tout ce qu’elle affiche est lu dans le TEI servi.
+- `christofle.xsl` — la feuille de transformation TEI → HTML du corpus (minutes, apparat, index, folios, fac-similés). Elle lit le TEI complet par `document()` (depuis `221c40f`) pour ce que la page servie ne contient pas : `christofle.xml` (ou, à défaut, `../data/christofle.xml`) doit donc être posé à côté de la feuille au déploiement, identique à `data/christofle.xml`.
 
 ### Ce qui ne figure pas ici
 

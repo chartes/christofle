@@ -225,6 +225,10 @@
             <date when="2026-09">septembre 2026</date>
             <desc>migration vers DoTS (École nationale des chartes) : identifiant de ressource, autorités, unités citables, minutes regroupées par mois, index découpé par lettre et relié au texte, index des types d’actes, fac-similés, barres de navigation par mois, jour et note, conformité TEI ; texte édité inchangé</desc>
          </change>
+         <change>
+            <date when="2026-10-04">4 octobre 2026</date>
+            <desc>exemple de citation des mentions légales : le lien vers la note 136 de l’ancien site ÉLEC vise désormais la minute de l’édition (#minute-136), le texte cité (adresse de la publication d’origine) restant inchangé ; minute 098 : l’appel de note posé en fin de texte lors de la migration est retiré, comme dans la source de 2016 et sur l’ÉLEC ; minute 284 : espace rétablie dans « etc. Coustz »</desc>
+         </change>
       </revisionDesc>
    </teiHeader>
    <text>
@@ -460,7 +464,7 @@
                      <publisher>École nationale des chartes</publisher>
                      <pubPlace>Paris</pubPlace>
                      <date>2015-....</date>
-                     <note type="onLineAccess">En ligne : <ref target="http://elec.enc.sorbonne.fr/christofle/notes/note-136.html">http://elec.enc.sorbonne.fr/christofle/notes/note-136.html</ref> (consulté le [date de consultation]).</note>
+                     <note type="onLineAccess">En ligne : <ref target="#minute-136">http://elec.enc.sorbonne.fr/christofle/notes/note-136.html</ref> (consulté le [date de consultation]).</note>
                   </bibl>
                </p>
             </div>
@@ -6180,7 +6184,7 @@
                      eschoaste de ladicte <persName ref="#p-0546" corresp="#idx-lettre-J" xml:id="minute-098-p-009">Jehannete</persName>,
                      jadis sa femme, mere des dessus nommez, et de ce en avoir eu chacun sa juste et
                      lealle partie et porcion, et de tout ce se tindrent contens et bien paiez,
-                     quittent etc. Promettent non venir contre etc.<ref type="note" n="1" xml:id="minute-098-a-01" target="#minute-098-n-01"/>
+                     quittent etc. Promettent non venir contre etc.
                      </p>
                   </div>
                </body>
@@ -16507,7 +16511,7 @@
                      jusques a hui, si comme lesdictes parties disoient, et duquel fin compte ledit
                      debteur se tint content. A paier a voulenté. Obligent etc. Et plus promect
                      ledit creancier audit debteur de lui faire gangnier lesdiz XVI<ref type="note" n="2" xml:id="minute-284-a-02" target="#minute-284-n-02"/> solz parisis
-                     oudit mestier de maçon etc. Renoncent etc.Coustz etc.</p>
+                     oudit mestier de maçon etc. Renoncent etc. Coustz etc.</p>
                      <p>
                         <add place="margin-left" n="Dans la marge gauche">f. </add>
                      </p>
