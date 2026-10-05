@@ -105,6 +105,46 @@
     rend inline. Les 384 vraies notes d'apparat ont un xml:id et ne sont pas
     concernees ; les notes marginales gardent le rendu generique.
   -->
+  <!-- 2026-10-05 : une note de fin sans @target et sans aucun appel qui la vise (seul cas :
+       minute-098, dont l'appel ajouté à la migration a été retiré le 04/10) n'a pas de lien de
+       retour : hteiml en fabriquait un vers « #id_ », qui ne mène nulle part. Pour toute autre
+       note, le modèle est celui de hteiml (tei2html.xsl, noteback), recopié à l'identique. -->
+  <xsl:template name="noteback">
+    <xsl:param name="class">noteback</xsl:param>
+    <xsl:variable name="id">
+      <xsl:call-template name="id"/>
+    </xsl:variable>
+    <xsl:variable name="xid" select="string(@xml:id)"/>
+    <xsl:choose>
+      <xsl:when test="$class = 'noteback' and self::tei:note and not(@target) and ancestor::tei:back and not(//*[@target = concat('#', $xid)])">
+        <span class="{$class}">
+          <xsl:call-template name="note-n"/>
+          <xsl:text>. </xsl:text>
+        </span>
+      </xsl:when>
+      <xsl:otherwise>
+        <a class="{$class}">
+          <xsl:attribute name="href">
+            <xsl:choose>
+              <xsl:when test="@target">
+                <xsl:value-of select="substring-before(concat(@target, ' '), ' ')"/>
+              </xsl:when>
+              <xsl:otherwise>
+                <xsl:text>#</xsl:text>
+                <xsl:value-of select="$id"/>
+                <xsl:text>_</xsl:text>
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:attribute>
+          <xsl:call-template name="note-n"/>
+          <xsl:if test="$class = 'noteback'">
+            <xsl:text>. </xsl:text>
+          </xsl:if>
+        </a>
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
   <xsl:template match="tei:note[not(@xml:id) and not(@target) and not(@place = 'margin')]" priority="6">
     <xsl:choose>
       <xsl:when test="tei:p or tei:div">

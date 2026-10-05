@@ -230,6 +230,7 @@
             <desc>exemple de citation des mentions légales : le lien vers la note 136 de l’ancien site ÉLEC vise désormais la minute de l’édition (#minute-136), le texte cité (adresse de la publication d’origine) restant inchangé ; minute 098 : l’appel de note posé en fin de texte lors de la migration est retiré, comme dans la source de 2016 et sur l’ÉLEC ; minute 284 : espace rétablie dans « etc. Coustz »</desc>
          </change>
          <change when="2026-10-04">Noms indexés des minutes : la vedette de l'index (forme que l'ÉLEC affichait en infobulle) est écrite en @n sur les 6 220 persName, placeName et orgName liés, pour que la feuille n'ait plus à relire le TEI complet.</change>
+         <change when="2026-10-05">minute-098 : la note d'apparat ne vise plus l'ancre #minute-098-a-01, retirée le 04/10 avec l'appel ajouté à la migration (son lien de retour menait nulle part).</change>
       </revisionDesc>
    </teiHeader>
    <text>
@@ -6191,7 +6192,7 @@
                </body>
                <back>
                   <div type="notes">
-                     <note n="1" xml:id="minute-098-n-01" target="#minute-098-a-01">
+                     <note n="1" xml:id="minute-098-n-01">
                         <p>Dans la marge gauche, un signe n’étant ni un « f » ni un « a », qui
                         ressemble à un « p » sans hampe.</p>
                      </note>
