@@ -1,11 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<xsl:transform version="1.1"
-  xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-  xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:tei="http://www.tei-c.org/ns/1.0"
-  exclude-result-prefixes="tei">
+<?xml version='1.0' encoding='UTF-8'?>
+<xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns="http://www.w3.org/1999/xhtml" xmlns:tei="http://www.tei-c.org/ns/1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:chr="urn:christofle:fonctions" version="1.1" exclude-result-prefixes="tei xs chr">
 
   <xsl:import href="../../renderers/hteiml/xsl/tei2html.xsl"/>
+  <xsl:include href="garde.xsl"/><!-- 2026-10-08 : page de garde commune à tous les projets -->
+  <xsl:include href="ordinaux.xsl"/> <!-- chantier ordinaux 2026-10-08 -->
 
   <!-- 2026-10-04 (C7) : chemins selon le serveur. Dans le dépôt, l'application est
        servie sous /elec/ et l'API sous /dots/api/dts/ (dev.chartes.psl.eu) ; la copie
@@ -67,11 +65,7 @@
        perdu, le clic allant au lien d'index. -->
   <xsl:template match="tei:ref[@type='note']">
     <xsl:variable name="corps" select="key('chr-note-by-id', substring-after(@target, '#'))[1]"/>
-    <xsl:variable name="dans-lien"
-      select="ancestor::tei:text[starts-with(@xml:id, 'minute-')]
-              and (ancestor::tei:persName[starts-with(@ref, '#p-')]
-                   or ancestor::tei:placeName[starts-with(@ref, '#l-')]
-                   or ancestor::tei:orgName[starts-with(@ref, '#o-')])"/>
+    <xsl:variable name="dans-lien" select="ancestor::tei:text[starts-with(@xml:id, 'minute-')]               and (ancestor::tei:persName[starts-with(@ref, '#p-')]                    or ancestor::tei:placeName[starts-with(@ref, '#l-')]                    or ancestor::tei:orgName[starts-with(@ref, '#o-')])"/>
     <xsl:variable name="balise">
       <xsl:choose>
         <xsl:when test="$dans-lien">span</xsl:when>
@@ -162,64 +156,60 @@
     La source TEI porte déjà cette structure dans front/body ; on la restitue
     ici sans changer le composant Vue qui affiche le fragment transformé.
   -->
-  <xsl:template match="tei:group" priority="8">
-    <section class="christofle-edition">
-      <xsl:apply-templates/>
-    </section>
-  </xsl:template>
-
   <!-- Index précalculés dans data/christofle.xml par scripts/build_indexes.py.
        Ils restent disponibles dans les fragments DoTS, sans composant Vue spécifique. -->
   <!-- D34 : plus aucun lien ne s'en sert (les deux modèles qui l'employaient
        visent désormais l'entrée). Conservée : elle documente l'identifiant de la
        page d'index, et un retour en arrière tient en deux remplacements. -->
-  <xsl:variable name="christofle-index-refid" select="'r65205'"/>
-
-  <!-- Index des types d'actes : vrai fragment TEI/DTS. -->
-  <xsl:template match="tei:div[@type = 'index-types-actes']" priority="12">
+  <!-- Index des types d'actes : vrai fragment TEI/DTS.
+       2026-10-06 : une ligne REPLIABLE par type (<details> natif, sans script), sur le
+       modèle de la page Références des Chroniques latines : replié, le type et son
+       nombre d'actes ; déplié, les actes groupés par mois (d'après date/@when, pas le
+       texte : « fevrier » s'y trouve une fois), chaque numéro menant à sa minute, suivi
+       du jour. L'ÉLEC alignait tout sur une ligne par type (« Accord : 9 (8 janvier) ; … »). -->
+  <xsl:template match="tei:div[@type = 'index-types-actes']" priority="12" version="3.0">
+    <xsl:variable name="mois" select="('janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',                                        'août', 'septembre', 'octobre', 'novembre', 'décembre')"/>
     <section class="chr-types" id="{@xml:id}">
       <h1><xsl:value-of select="normalize-space(tei:head)"/></h1>
       <p class="chr-types-intro">L’index renvoie au numéro de la transaction.</p>
 
       <xsl:for-each select="tei:list[@type='act-types']/tei:item">
         <xsl:sort select="tei:label"/>
-        <article class="chr-type">
-          <h2 class="chr-type-head">
-            <!-- L'ÉLEC affiche « Accord », « Contrat d'apprentissage » : seule la
-                 première lettre est capitalisée. text-transform:capitalize en CSS
-                 donnerait « Contrat D'apprentissage », d'où la bascule ici. -->
-            <xsl:variable name="label" select="normalize-space(tei:label)"/>
-            <xsl:value-of select="translate(substring($label, 1, 1),
-              'abcdefghijklmnopqrstuvwxyzàâäéèêëîïôöùûüç',
-              'ABCDEFGHIJKLMNOPQRSTUVWXYZÀÂÄÉÈÊËÎÏÔÖÙÛÜÇ')"/>
-            <xsl:value-of select="substring($label, 2)"/>
-            <span class="chr-type-count">
-              <xsl:text> (</xsl:text>
-              <xsl:value-of select="count(tei:list/tei:item/tei:ref)"/>
-              <xsl:text>)</xsl:text>
+        <xsl:variable name="actes" select="tei:list/tei:item"/>
+        <details class="chr-type">
+          <summary>
+            <span class="chr-type-head">
+              <!-- L'ÉLEC affiche « Accord », « Contrat d'apprentissage » : seule la
+                   première lettre est capitalisée (text-transform:capitalize donnerait
+                   « Contrat D'apprentissage »). -->
+              <xsl:variable name="label" select="normalize-space(tei:label)"/>
+              <xsl:value-of select="concat(upper-case(substring($label, 1, 1)), substring($label, 2))"/>
             </span>
-          </h2>
-
-          <ul class="chr-acte-list">
-            <xsl:for-each select="tei:list/tei:item">
-              <xsl:sort select="number(tei:ref)" data-type="number"/>
-              <li>
-                <a title="Consulter la note"
-                   class="internalLink"
-                   href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
-                  <xsl:value-of select="tei:ref"/>
-                </a>
-                <xsl:if test="tei:date">
-                  <span class="chr-acte-date">
-                    <xsl:text> (</xsl:text>
-                    <xsl:value-of select="tei:date"/>
-                    <xsl:text>)</xsl:text>
-                  </span>
-                </xsl:if>
-              </li>
-            </xsl:for-each>
-          </ul>
-        </article>
+            <span class="chr-type-nb">
+              <xsl:value-of select="count($actes)"/>
+              <xsl:value-of select="if (count($actes) = 1) then ' acte' else ' actes'"/>
+            </span>
+          </summary>
+          <dl class="chr-mois">
+            <xsl:for-each-group select="$actes" group-by="substring(tei:date/@when, 6, 2)">
+              <xsl:sort select="number(current-grouping-key())" data-type="number"/>
+              <dt><xsl:value-of select="concat(upper-case(substring($mois[number(current-grouping-key())], 1, 1)), substring($mois[number(current-grouping-key())], 2))"/></dt>
+              <dd>
+                <xsl:for-each select="current-group()">
+                  <xsl:sort select="number(tei:ref)" data-type="number"/>
+                  <xsl:if test="position() != 1"><span class="chr-sep"> · </span></xsl:if>
+                  <a title="Consulter la note" class="internalLink" href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                    <xsl:value-of select="tei:ref"/>
+                  </a>
+                  <xsl:variable name="jour" select="substring-before(concat(normalize-space(tei:date), ' '), ' ')"/>
+                  <xsl:if test="$jour != ''">
+                    <span class="chr-acte-date"><xsl:value-of select="concat(' (', $jour, ')')"/></span>
+                  </xsl:if>
+                </xsl:for-each>
+              </dd>
+            </xsl:for-each-group>
+          </dl>
+        </details>
       </xsl:for-each>
     </section>
   </xsl:template>
@@ -283,8 +273,7 @@
                   <span class="sep"> &gt;&gt; </span>
                 </xsl:when>
               </xsl:choose>
-              <a class="internalLink"
-                 href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+              <a class="internalLink" href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                 <xsl:choose>
                   <!-- barre des jours : le quantième suffit, le mois est au-dessus -->
                   <xsl:when test="tei:ref/@type = 'day'">
@@ -313,10 +302,6 @@
        l'en-tête et une phrase d'orientation. La liste reste précalculée dans le
        TEI (<argument type="notes-index">, build_indexes.py) si elle devait être
        réintroduite. -->
-  <xsl:template match="tei:group[tei:argument[@ana = '#notes-index']]" priority="12">
-    <xsl:apply-templates select="tei:argument[@ana = '#notes-index']"/>
-  </xsl:template>
-
   <xsl:template match="tei:argument[@ana = '#notes-index']" priority="12">
     <section class="christofle-notes-index">
       <h1>Édition des notes</h1>
@@ -328,10 +313,6 @@
        précalculé dans le TEI (build_indexes.py) et porté par un <argument>,
        enfant direct du <div> : il survit donc à excludeFragments, alors que les
        parties elles-mêmes, unités citables, sont retirées du fragment. -->
-  <xsl:template match="tei:div[@xml:id = 'introduction'][tei:argument[@ana = '#intro-index']]" priority="12">
-    <xsl:apply-templates select="tei:argument[@ana = '#intro-index']"/>
-  </xsl:template>
-
   <!-- L'ÉLEC n'a pas de page d'accueil d'introduction : son entrée de menu mène
        à introduction/partie-1.html, titrée « Introduction > Le notaire ». On rend
        donc ici la première partie, dont build_indexes.py a placé une copie dans
@@ -352,10 +333,6 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="tei:group[@type='month'][tei:argument[@ana = '#month-index']]" priority="12">
-    <xsl:apply-templates select="tei:argument[@ana = '#month-index']"/>
-  </xsl:template>
-
   <xsl:template match="tei:argument[@ana = '#month-index']" priority="12">
     <xsl:call-template name="christofle-month-index">
       <xsl:with-param name="month" select="."/>
@@ -364,8 +341,7 @@
 
   <!-- Lien de téléchargement de l'édition : export TEI live DoTS. -->
   <xsl:template match="tei:ref[starts-with(@target, 'telechargement')]" priority="12">
-    <a class="christofle-download" download="christofle_1437.xml"
-       href="{$dts-api-base}document?resource=christofle_1437&amp;mediaType=xml">
+    <a class="christofle-download" download="christofle_1437.xml" href="{$dts-api-base}document?resource=christofle_1437&amp;mediaType=xml">
       <xsl:apply-templates/>
     </a>
   </xsl:template>
@@ -436,8 +412,7 @@
               <h3 class="jour-head"><xsl:value-of select="normalize-space(tei:date)"/></h3>
               <xsl:for-each select="$minutes[tei:date/@when = $when]">
                 <div class="jour-note">
-                  <a class="internalLink note-link"
-                     href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                  <a class="internalLink note-link" href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
                     <span class="note-num"><xsl:value-of select="tei:ref"/>.</span>
                     <xsl:text> </xsl:text>
                     <xsl:variable name="nature" select="normalize-space(tei:term[@type = 'natureJuridique'][1])"/>
@@ -559,9 +534,10 @@
     <xsl:text>/christofle/document/christofle_1437?refId=</xsl:text>
     <xsl:choose>
       <!-- Entrée connue : page de la lettre + ancre, comme l'ÉLEC. -->
+      <!-- 2026-10-08 : les pages par lettre ne sont plus des unités (lettres retirées du registre :
+           l'index tient sur la seule page r65205, servie entière). L'entrée est visée dans cette page. -->
       <xsl:when test="$lettre">
-        <xsl:value-of select="$lettre"/>
-        <xsl:text>#</xsl:text>
+        <xsl:text>r65205#</xsl:text>
         <xsl:value-of select="$cible"/>
       </xsl:when>
       <!-- Renvoi sans @corresp, c'est-à-dire dont la cible n'est dans aucune
@@ -589,11 +565,9 @@
        (comportement antérieur). Variable globale : évaluée seulement quand une
        page contient un lien d'index. -->
 
-  <xsl:key name="chr-idx-id" match="tei:person | tei:place | tei:org" use="@xml:id"/>
-
   <xsl:template match="tei:person" mode="christofle-vedette">
     <xsl:apply-templates select="tei:persName[1]" mode="christofle-index-name">
-      <xsl:with-param name="variantes" select="tei:persName[position() > 1]"/>
+      <xsl:with-param name="variantes" select="tei:persName[position() &gt; 1]"/>
     </xsl:apply-templates>
     <xsl:if test="tei:note[@type = 'relation']">
       <xsl:text>, </xsl:text>
@@ -603,13 +577,9 @@
 
   <xsl:template match="tei:place" mode="christofle-vedette">
     <xsl:for-each select="tei:placeName">
-      <xsl:if test="position() > 1"><xsl:text> / </xsl:text></xsl:if>
+      <xsl:if test="position() &gt; 1"><xsl:text> / </xsl:text></xsl:if>
       <xsl:apply-templates select="." mode="christofle-index-inline"/>
     </xsl:for-each>
-  </xsl:template>
-
-  <xsl:template match="tei:org" mode="christofle-vedette">
-    <xsl:value-of select="normalize-space(tei:orgName[1])"/>
   </xsl:template>
 
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:persName[@ref[starts-with(., '#p-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:placeName[@ref[starts-with(., '#l-')]] | tei:text[starts-with(@xml:id, 'minute-')]//tei:orgName[@ref[starts-with(., '#o-')]]" priority="10">
@@ -706,47 +676,271 @@
        relation) suivi des renvois aux minutes (déduits de @corresp).
        =================================================================== -->
 
-  <!-- Index historique ELEC : personnes ET lieux dans une seule suite alphabétique.
-       Le XML conserve deux listes distinctes (persons-index / places-index), mais le rendu
-       les fusionne et les trie sans modifier la source TEI. -->
-  <xsl:template match="tei:div[@type = 'indexes']" priority="9">
+  <!-- 2026-10-06 : index des lieux et des personnes en TABLEAU, sur une seule page.
+       Trois colonnes : Nom (champ de recherche avec suggestions), Type (Personne,
+       Lieu, Organisme), Minutes (recherche d'un numéro exact ; le tri range par
+       nombre de minutes). Tri, compteur, « Effacer » et export CSV : module de
+       Montferrand (comptes.xsl), préfixé chr-.
+       Les sous-entrées de lieux ont leur ligne, « Lieu › sous-entrée ».
+       Les pages par lettre (idx-lettre-A…) restent pour le sommaire et pour les
+       renvois des minutes : leurs fiches ne changent pas.
+       La page n'est complète que servie avec ses fragments (citeType
+       indexLieuxPersonnes dans editByCiteType) ; sans eux, il ne reste que
+       l'introduction, comme avant. -->
+  <xsl:template match="tei:div[@type = 'indexes']" priority="9" version="3.0">
+    <xsl:variable name="fiches" select=".//tei:div[@type = 'lettre']//(tei:person | tei:place | tei:org)"/>
     <section class="christofle-index christofle-index-unified">
       <xsl:apply-templates select="tei:head" mode="christofle-index"/>
-
-      <!-- Introduction générale + explication toponymique de l'ancien index. -->
       <div class="christofle-index-intro">
         <xsl:for-each select="tei:p | tei:div[@type = 'places-index']/tei:p">
           <p><xsl:apply-templates/></p>
         </xsl:for-each>
       </div>
-
-      <!-- D34 (2026-09-14) : la barre des 21 boutons de filtre est RETIRÉE.
-           Les lettres sont désormais des unités citables du TEI
-           (div[@type='lettre'], xml:id=idx-lettre-A…) : elles paraissent dans le
-           sommaire de gauche, avec leurs 1 420 entrées. Garder la barre ferait
-           doublon — c'est ce qui a été retiré partout ailleurs (D28).
-           Le modèle christofle-lettres-bar et la clé chr-idx-lettre restent dans
-           la feuille, inutilisés, pour un retour en arrière en une ligne.
-           Les 26 règles :has() de christofle.customCss.css (l. 547-635) deviennent
-           elles aussi sans objet ; elles sont inoffensives et peuvent rester.
-
-           Cette page-ci n'est plus servie qu'en excludeFragments (dès que
-           « Index des lieux et personnes » quitte editByCiteType) : les
-           div[@type='lettre'] en sont retirés par DoTS et il ne reste que les
-           deux paragraphes d'introduction. L'apply-templates ci-dessous ne sert
-           donc que si l'on sert l'unité entière (API, export) : il rend alors
-           l'index complet, lettre par lettre, sans rien perdre. -->
-      <div class="christofle-index-entries">
-        <xsl:for-each select="tei:div[@type = 'lettre']">
-          <!-- D34 : plus de xsl:sort. L'ordre alphabétique mêlé est désormais
-               celui de la SOURCE, écrit par d34_christofle_index_lettres.xq avec
-               une clé réglée sur celle-ci (0 divergence sur 1 420 vérifiée).
-               Trier encore ferait diverger la page du sommaire, qui suit
-               l'ordre du document. -->
-          <xsl:apply-templates select="."/>
-        </xsl:for-each>
-      </div>
+      <xsl:call-template name="chr-tableau-index">
+        <xsl:with-param name="fiches" select="$fiches"/>
+        <xsl:with-param name="csv-nom" select="'christofle-index-lieux-personnes'"/>
+      </xsl:call-template>
     </section>
+  </xsl:template>
+
+  <!-- 2026-10-07 : le tableau de l'index, sorti du gabarit « indexes » pour servir aussi
+       aux pages par lettre (idx-lettre-A…), à la demande de l'utilisateur. -->
+  <xsl:template name="chr-tableau-index" version="3.0">
+    <xsl:param name="fiches"/>
+    <xsl:param name="csv-nom" select="'christofle-index'"/>
+      <xsl:if test="$fiches">
+        <xsl:variable name="vedettes" as="xs:string*">
+          <xsl:for-each select="$fiches">
+            <xsl:sequence select="chr:vedette(.)"/>
+          </xsl:for-each>
+        </xsl:variable>
+        <div class="chr-tableau-cadre">
+          <xsl:call-template name="chr-barre-filtres">
+            <xsl:with-param name="total" select="count($fiches)"/>
+            <xsl:with-param name="unite" select="'entrées'"/>
+          </xsl:call-template>
+          <table class="chr-tableau chr-index" data-csv-nom="{$csv-nom}" data-csv-entetes="Nom|Type|Minutes">
+            <caption class="chr-tableau-legende">
+              <xsl:text>Cliquer sur un en-tête de colonne pour trier (un second clic inverse l’ordre ; la colonne Minutes se trie par nombre de minutes). </xsl:text>
+              <span class="chr-aide-minutes">Filtre Minute : un numéro (12), ou un intervalle (12–40, ou « de 12 à 40 ») ; une ligne est retenue si l’une de ses minutes tombe dans l’intervalle.</span>
+            </caption>
+            <thead>
+              <tr>
+                <xsl:call-template name="chr-th"><xsl:with-param name="classe" select="'chr-c-nom'"/><xsl:with-param name="libelle" select="'Nom'"/></xsl:call-template>
+                <xsl:call-template name="chr-th"><xsl:with-param name="classe" select="'chr-c-type'"/><xsl:with-param name="libelle" select="'Type'"/></xsl:call-template>
+                <xsl:call-template name="chr-th"><xsl:with-param name="classe" select="'chr-c-minutes'"/><xsl:with-param name="libelle" select="'Minutes'"/><xsl:with-param name="numerique" select="true()"/></xsl:call-template>
+              </tr>
+              <tr class="chr-filtres">
+                <xsl:call-template name="chr-filtre">
+                  <xsl:with-param name="col" select="0"/>
+                  <xsl:with-param name="libelle" select="'Nom'"/>
+                  <xsl:with-param name="suggestions" select="distinct-values($vedettes)"/>
+                  <xsl:with-param name="liste" select="concat('chr-noms-', $csv-nom)"/>
+                </xsl:call-template>
+                <xsl:call-template name="chr-filtre">
+                  <xsl:with-param name="col" select="1"/>
+                  <xsl:with-param name="libelle" select="'Type'"/>
+                  <xsl:with-param name="type" select="'liste'"/>
+                  <xsl:with-param name="options" select="('Personne', 'Lieu', 'Organisme')"/>
+                </xsl:call-template>
+                <xsl:call-template name="chr-filtre">
+                  <xsl:with-param name="col" select="2"/>
+                  <xsl:with-param name="libelle" select="'Minute'"/>
+                  <xsl:with-param name="type" select="'minutes'"/>
+                </xsl:call-template>
+              </tr>
+            </thead>
+            <tbody>
+              <xsl:for-each select="$fiches">
+                <xsl:variable name="i" select="position()"/>
+                <xsl:variable name="type" select="if (self::tei:person) then 'Personne' else if (self::tei:org) then 'Organisme' else 'Lieu'"/>
+                <xsl:variable name="nums" select="for $r in tokenize(normalize-space(@corresp), ' ')[starts-with(., '#minute-')] return string(number(substring-after($r, '#minute-')))"/>
+                <xsl:variable name="cellule-nom">
+                  <xsl:call-template name="chr-cellule-nom"/>
+                </xsl:variable>
+                <tr id="{@xml:id}" class="chr-ligne chr-{lower-case($type)}{if (parent::tei:place) then ' chr-sous-entree' else ''}" data-o="{$i}">
+                  <td class="chr-c-nom" data-sort="{$vedettes[$i]}" data-f="{chr:plat(string($cellule-nom))}" data-csv="{normalize-space(string($cellule-nom))}">
+                    <xsl:copy-of select="$cellule-nom"/>
+                  </td>
+                  <td class="chr-c-type" data-sort="{$type}" data-f="{chr:plat($type)}">
+                    <xsl:value-of select="$type"/>
+                  </td>
+                  <td class="chr-c-minutes" data-sort="{if (exists($nums[. castable as xs:integer])) then min($nums[. castable as xs:integer] ! xs:integer(.)) else ''}" data-f="{string-join($nums, ' ')}" data-csv="{string-join($nums, ', ')}">
+                    <xsl:choose>
+                      <xsl:when test="exists($nums)">
+                        <xsl:call-template name="christofle-refs-loop">
+                          <xsl:with-param name="refs" select="normalize-space(@corresp)"/>
+                        </xsl:call-template>
+                      </xsl:when>
+                      <xsl:otherwise><span class="chr-vide">—</span></xsl:otherwise>
+                    </xsl:choose>
+                  </td>
+                </tr>
+              </xsl:for-each>
+            </tbody>
+          </table>
+        </div>
+      </xsl:if>
+  </xsl:template>
+
+  <!-- Vedette en texte simple (tri, suggestions) ; sous-entrée : « Lieu › sous-entrée ». -->
+  <xsl:function name="chr:vedette" as="xs:string" version="3.0">
+    <xsl:param name="e" as="element()"/>
+    <xsl:variable name="v"><xsl:apply-templates select="$e" mode="christofle-vedette"/></xsl:variable>
+    <xsl:sequence select="normalize-space(if ($e/parent::tei:place) then concat(chr:vedette($e/parent::tei:place), ' › ', $v) else string($v))"/>
+  </xsl:function>
+
+  <!-- Cellule « Nom » : la vedette telle que dans les fiches des pages par lettre. -->
+  <xsl:template name="chr-cellule-nom" version="3.0">
+    <span class="index-vedette">
+      <xsl:if test="parent::tei:place">
+        <span class="chr-parent"><xsl:apply-templates select="parent::tei:place" mode="christofle-vedette"/></span>
+        <span class="chr-chevron"> › </span>
+      </xsl:if>
+      <xsl:choose>
+        <xsl:when test="self::tei:person">
+          <span class="persName-entry">
+            <xsl:apply-templates select="tei:persName[1]" mode="christofle-index-name">
+              <xsl:with-param name="variantes" select="tei:persName[position() &gt; 1]"/>
+            </xsl:apply-templates>
+            <xsl:if test="tei:note[@type = 'relation']">
+              <xsl:text>, </xsl:text>
+              <span class="persName-note"><xsl:value-of select="normalize-space(tei:note[@type = 'relation'])"/></span>
+            </xsl:if>
+          </span>
+        </xsl:when>
+        <xsl:when test="self::tei:org">
+          <span class="orgName-entry"><xsl:value-of select="normalize-space(tei:orgName[1])"/></span>
+        </xsl:when>
+        <xsl:otherwise>
+          <span class="placeName-entry">
+            <xsl:for-each select="tei:placeName">
+              <xsl:if test="position() &gt; 1"><xsl:text> / </xsl:text></xsl:if>
+              <xsl:apply-templates select="." mode="christofle-index-inline"/>
+            </xsl:for-each>
+          </span>
+          <xsl:if test="tei:location">
+            <xsl:text> </xsl:text><!-- insécable : une espace seule entre deux balises est supprimée par Vue -->
+            <span class="location chr-location"><xsl:apply-templates select="tei:location/*" mode="christofle-index-loc"/></span>
+          </xsl:if>
+        </xsl:otherwise>
+      </xsl:choose>
+    </span>
+    <xsl:apply-templates select="tei:note[not(@type = 'relation')]" mode="christofle-index-seealso"/>
+  </xsl:template>
+
+  <!-- Module tableau (tri, filtres, compteur, CSV) repris de Montferrand, préfixé chr-. -->
+  <xsl:function xmlns:xs="http://www.w3.org/2001/XMLSchema" name="chr:plat" as="xs:string" version="3.0">
+    <xsl:param name="s" as="xs:string?"/>
+    <xsl:sequence select="normalize-space(lower-case(replace(normalize-unicode(string($s), 'NFD'), '\p{Mn}', '')))"/>
+  </xsl:function>
+  <xsl:variable version="3.0" name="chr-tri-js">var th=this.closest('th'),tr=th.parentNode,b=th.closest('table').tBodies[0],i=Array.prototype.indexOf.call(tr.cells,th),num=th.getAttribute('data-type')==='n',d=th.getAttribute('aria-sort')==='ascending'?-1:1,c=window.chrTriColl||(window.chrTriColl=new Intl.Collator('fr',{sensitivity:'base',numeric:true})),k=Array.from(b.rows).map(function(r){var s=r.cells[i].getAttribute('data-sort')||'';return {r:r,s:s,v:num?Number(s):s,o:Number(r.getAttribute('data-o'))};});k.sort(function(x,y){if((x.s==='')!==(y.s===''))return x.s===''?1:-1;return d*(num?x.v-y.v:c.compare(x.v,y.v))||x.o-y.o;});var f=document.createDocumentFragment();k.forEach(function(e){f.appendChild(e.r);});b.appendChild(f);b.querySelectorAll('.dots-target').forEach(function(x){x.classList.remove('dots-target');});Array.from(tr.cells).forEach(function(h){h.setAttribute('aria-sort','none');});th.setAttribute('aria-sort',d===1?'ascending':'descending');</xsl:variable>
+  <xsl:variable version="3.0" name="chr-filtre-js">var cadre=this.closest('.chr-tableau-cadre'),t=cadre.querySelector('table'),n=function(s){return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();},cr=[];cadre.querySelectorAll('.chr-filtres input, .chr-filtres select').forEach(function(e){var v=n(e.value);if(v!=='')cr.push({i:Number(e.getAttribute('data-col')),k:e.getAttribute('data-k'),v:v});});var tst=function(r,c){var f=r.cells[c.i].getAttribute('data-f')||'';if(c.k==='t')return f.indexOf(c.v)!==-1;if(c.k==='eq')return (' '+f+' ').indexOf(' '+c.v+' ')!==-1;if(c.k==='mi'){var m=/^(?:de )?(\d+)(?:\s*[-–a]\s*(\d+))?$/.exec(c.v);if(!m)return true;var lo=Number(m[1]),hi=m[2]===undefined?lo:Number(m[2]);if(lo&gt;hi){var t0=lo;lo=hi;hi=t0;}return f.split(' ').some(function(s){var x=Number(s);return s!==''&amp;&amp;x&gt;=lo&amp;&amp;x&lt;=hi;});}var x=Number(r.cells[c.i].getAttribute('data-sort')||0),y=Number(c.v);if(isNaN(y))return true;return c.k==='min'?Math.sign(x-y)!==-1:Math.sign(y-x)!==-1;};var nb=0,tot=0;Array.from(t.tBodies[0].rows).forEach(function(r){tot++;var ok=cr.every(function(c){return tst(r,c);});r.hidden=!ok;if(ok)nb++;});cadre.querySelectorAll('.chr-filtres input[list]').forEach(function(e){var d=document.getElementById(e.getAttribute('list'));if(!d)return;var col=Number(e.getAttribute('data-col')),aut=cr.filter(function(c){return c.i!==col;}),txt='';if(aut.length)Array.from(t.tBodies[0].rows).forEach(function(r){if(aut.every(function(c){return tst(r,c);}))txt+='|'+(r.cells[col].getAttribute('data-f')||'');});var q=n(e.value),qb=e.value.toLowerCase().replace(/\s+/g,'');Array.from(d.options).forEach(function(o){var v=o.getAttribute('data-n')||n(o.value),ok=v.indexOf(q)!==-1;if(ok)if(aut.length)ok=txt.indexOf(v)!==-1;o.disabled=!ok;if(ok)if(o.value.toLowerCase().replace(/\s+/g,'').indexOf(qb)===-1){o.label=v;return;}o.removeAttribute('label');});});var cp=cadre.querySelector('.chr-compteur');if(cp)cp.textContent=(cr.length?nb+' sur '+tot:tot)+' '+cp.getAttribute('data-unite');var ef=cadre.querySelector('.chr-effacer');if(ef)ef.hidden=!cr.length;</xsl:variable>
+  <xsl:variable version="3.0" name="chr-effacer-js">var cadre=this.closest('.chr-tableau-cadre');cadre.querySelectorAll('.chr-filtres input, .chr-filtres select').forEach(function(e){e.value='';});cadre.querySelector('.chr-filtres input, .chr-filtres select').dispatchEvent(new Event('input',{bubbles:true}));</xsl:variable>
+  <xsl:variable version="3.0" name="chr-csv-js">var cadre=this.closest('.chr-tableau-cadre'),t=cadre.querySelector('table'),q=String.fromCharCode(34),sep=';',nl=String.fromCharCode(13,10),ent=(t.getAttribute('data-csv-entetes')||'').split('|'),val=function(td){var v=td.getAttribute('data-csv');if(v===null)v=td.querySelector('.chr-vide')?'':td.innerText;return v.replace(/\s+/g,' ').trim();},champ=function(s){return q+String(s).split(q).join(q+q)+q;},lignes=[ent.map(champ).join(sep)];Array.from(t.tBodies[0].rows).forEach(function(r){if(r.hidden)return;var l=[];Array.from(r.cells).forEach(function(td){l.push(val(td));var p=td.getAttribute('data-csv-plus');if(p!==null)l.push(p);});lignes.push(l.map(champ).join(sep));});var b=new Blob([String.fromCharCode(65279)+lignes.join(nl)],{type:'text/csv;charset=utf-8'}),a=document.createElement('a');a.href=window.URL.createObjectURL(b);a.download=(t.getAttribute('data-csv-nom')||'export')+'-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();setTimeout(function(){window.URL.revokeObjectURL(a.href);},1000);</xsl:variable>
+  <xsl:template version="3.0" name="chr-barre-filtres">
+    <xsl:param name="total"/>
+    <xsl:param name="unite"/>
+    <div class="chr-barre-filtres">
+      <span class="chr-compteur" aria-live="polite" data-unite="{$unite}"><xsl:value-of select="concat($total, ' ', $unite)"/></span>
+      <button type="button" class="chr-effacer" hidden="hidden">
+        <xsl:attribute name="onclick" select="$chr-effacer-js"/>
+        <xsl:text>Effacer les filtres</xsl:text>
+      </button>
+      <button type="button" class="chr-csv" title="Télécharger les lignes affichées, dans l’ordre du tri, au format CSV">
+        <xsl:attribute name="onclick" select="$chr-csv-js"/>
+        <xsl:text>Télécharger (CSV)</xsl:text>
+      </button>
+    </div>
+  </xsl:template>
+  <xsl:template version="3.0" name="chr-filtre">
+    <xsl:param name="col"/>
+    <xsl:param name="libelle"/>
+    <xsl:param name="type" select="'texte'"/>
+    <xsl:param name="min" select="''"/>
+    <xsl:param name="max" select="''"/>
+    <xsl:param name="options" select="()"/>
+    <!-- Suggestions d'un champ texte (datalist du navigateur) : facultatives.
+         Même logique « contient » que le filtre du tableau : à chaque frappe,
+         chr-filtre-js désactive (disabled) les options dont la forme aplatie
+         (data-n, casse et accents ôtés comme data-f) ne contient pas la saisie
+         aplatie, ou qui n'apparaissent dans aucune ligne retenue par les autres
+         filtres. Chrome filtre ensuite de son côté (HTMLInputElement::
+         FilteredDataListOptions) : il garde une option si chaque mot tapé est
+         contenu dans sa valeur OU son libellé, casse ignorée mais PAS les
+         accents, et il écarte les options disabled. Quand une option n'est
+         retenue qu'au prix des accents (« etienne » pour « Étienne »), le
+         script lui donne pour libellé sa forme aplatie, que Chrome affiche
+         sous la valeur : sans cela il la masquerait. Limite : une saisie
+         accentuée ne retrouve pas dans la liste une forme écrite sans accent
+         (le tableau, lui, la retrouve). -->
+    <xsl:param name="suggestions" select="()"/>
+    <xsl:param name="liste" select="''"/>
+    <td>
+      <xsl:choose>
+        <xsl:when test="$type = 'intervalle'">
+          <span class="chr-intervalle">
+            <input type="number" data-col="{$col}" data-k="min" placeholder="{$min}" min="{$min}" max="{$max}" aria-label="{$libelle} : au moins">
+              <xsl:attribute name="oninput" select="$chr-filtre-js"/>
+            </input>
+            <span class="chr-tiret" aria-hidden="true">–</span>
+            <input type="number" data-col="{$col}" data-k="max" placeholder="{$max}" min="{$min}" max="{$max}" aria-label="{$libelle} : au plus">
+              <xsl:attribute name="oninput" select="$chr-filtre-js"/>
+            </input>
+          </span>
+        </xsl:when>
+        <xsl:when test="$type = 'exact'">
+          <input type="search" data-col="{$col}" data-k="eq" placeholder="N°…" inputmode="numeric" aria-label="{$libelle} : numéro exact">
+            <xsl:attribute name="oninput" select="$chr-filtre-js"/>
+          </input>
+        </xsl:when>
+        <xsl:when test="$type = 'minutes'">
+          <!-- Minutes : un numéro (12), ou un intervalle (12–40, « de 12 à 40 »). Une ligne
+               est retenue si l’une de ses minutes (data-f : « 3 12 40 ») tombe dans l’intervalle. -->
+          <input type="search" data-col="{$col}" data-k="mi" placeholder="n° ou 12–40" aria-label="{$libelle} : un numéro, ou un intervalle de … à …" title="Un numéro (12), ou un intervalle (12–40 ou « de 12 à 40 »)">
+            <xsl:attribute name="oninput" select="$chr-filtre-js"/>
+          </input>
+        </xsl:when>
+        <xsl:when test="$type = 'liste'">
+          <select data-col="{$col}" data-k="eq" aria-label="{$libelle}">
+            <xsl:attribute name="onchange" select="$chr-filtre-js"/>
+            <xsl:attribute name="oninput" select="$chr-filtre-js"/>
+            <option value="">Toutes</option>
+            <xsl:for-each select="$options">
+              <option value="{chr:plat(.)}"><xsl:value-of select="."/></option>
+            </xsl:for-each>
+          </select>
+        </xsl:when>
+        <xsl:otherwise>
+          <input type="search" data-col="{$col}" data-k="t" placeholder="Filtrer…" aria-label="Filtrer la colonne {$libelle}">
+            <xsl:if test="exists($suggestions) and $liste != ''">
+              <xsl:attribute name="list" select="$liste"/>
+              <xsl:attribute name="autocomplete" select="'off'"/>
+            </xsl:if>
+            <xsl:attribute name="oninput" select="$chr-filtre-js"/>
+          </input>
+          <xsl:if test="exists($suggestions) and $liste != ''">
+            <datalist id="{$liste}">
+              <xsl:for-each select="$suggestions">
+                <option value="{.}" data-n="{chr:plat(.)}"/>
+              </xsl:for-each>
+            </datalist>
+          </xsl:if>
+        </xsl:otherwise>
+      </xsl:choose>
+    </td>
+  </xsl:template>
+  <xsl:template version="3.0" name="chr-th">
+    <xsl:param name="classe"/>
+    <xsl:param name="libelle"/>
+    <xsl:param name="numerique" select="false()"/>
+    <th scope="col" class="{$classe}" aria-sort="none">
+      <xsl:if test="$numerique"><xsl:attribute name="data-type">n</xsl:attribute></xsl:if>
+      <button type="button" class="chr-tri" title="Trier par cette colonne (cliquer de nouveau pour inverser)">
+        <xsl:attribute name="onclick" select="$chr-tri-js"/>
+        <xsl:value-of select="$libelle"/>
+      </button>
+    </th>
   </xsl:template>
 
   <!-- D34 : page d'une lettre (unité citable idx-lettre-A…). C'est l'équivalent
@@ -755,103 +949,16 @@
        forme des fiches est écrite « .christofle-index .index-entry » dans
        christofle.customCss.css (l. 269-355). Sans elle, les pages de lettre
        perdraient leur présentation. -->
-  <xsl:template match="tei:div[@type = 'lettre']" priority="9">
-    <section class="christofle-index christofle-index-lettre">
-      <xsl:if test="tei:head">
-        <h2 class="christofle-index-lettre-titre"><xsl:value-of select="normalize-space(tei:head)"/></h2>
-      </xsl:if>
-      <div class="christofle-index-entries">
-        <xsl:apply-templates select="tei:listPerson | tei:listPlace"/>
-      </div>
-    </section>
-  </xsl:template>
-
   <!-- Les sous-fragments restent consultables directement, avec le même tri. -->
-  <xsl:template match="tei:div[@type = 'persons-index'] | tei:div[@type = 'places-index']" priority="9">
-    <section class="christofle-index christofle-index-{substring-before(@type, '-')}">
-      <xsl:apply-templates select="tei:head" mode="christofle-index"/>
-      <xsl:choose>
-        <xsl:when test="@type = 'persons-index'">
-          <xsl:for-each select=".//tei:person">
-            <xsl:sort select="translate(normalize-space(string((tei:persName/tei:surname[normalize-space()] | tei:persName/tei:name[normalize-space()] | tei:persName/tei:forename[not(../tei:surname[normalize-space()] or ../tei:name[normalize-space()])] | tei:placeName)[1])), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')" data-type="text" lang="fr"/>
-            <xsl:sort select="translate(normalize-space(string(tei:persName/tei:forename[1])), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')" data-type="text" lang="fr"/>
-            <xsl:apply-templates select="."/>
-          </xsl:for-each>
-        </xsl:when>
-        <xsl:otherwise>
-          <xsl:for-each select="tei:listPlace/tei:place">
-            <xsl:sort select="translate(normalize-space(string(tei:placeName)), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')" data-type="text" lang="fr"/>
-            <xsl:apply-templates select="."/>
-          </xsl:for-each>
-        </xsl:otherwise>
-      </xsl:choose>
-    </section>
-  </xsl:template>
-
-  <xsl:template match="tei:head" mode="christofle-index">
-    <h2><xsl:apply-templates/></h2>
-  </xsl:template>
-
   <!-- D14e2 : lettre de classement d'une vedette d'index.
        La table translate() est EXACTEMENT celle des <xsl:sort> ci-dessus : la
        lettre affichée par la barre est donc toujours celle du tri (sinon une
        vedette accentuée se rangerait sous une lettre et se filtrerait sous une
        autre). @use ne peut pas référencer une variable en XSLT 1.0 : la table
        est donc répétée littéralement dans la clé et dans le template. -->
-  <xsl:key name="chr-idx-lettre"
-           match="tei:person | tei:div[@type = 'places-index']/tei:listPlace/tei:place"
-           use="translate(substring(normalize-space(string((tei:persName/tei:surname[normalize-space()] | tei:persName/tei:name[normalize-space()] | tei:persName/tei:forename[not(../tei:surname[normalize-space()] or ../tei:name[normalize-space()])] | tei:placeName)[1])), 1, 1), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')"/>
-
-  <xsl:template name="christofle-index-lettre">
-    <!-- agent_chrx2 : « tei:orgName » ajouté à l'union, pour les 3 <org>. La même
-         branche a été ajoutée à local:vedette() de d34_christofle_index_lettres.xq :
-         les deux doivent rester d'accord, sinon une vedette se rangerait sous une
-         lettre et s'afficherait sous une autre. -->
-    <xsl:variable name="vedette" select="normalize-space(string((tei:persName/tei:surname[normalize-space()] | tei:persName/tei:name[normalize-space()] | tei:persName/tei:forename[not(../tei:surname[normalize-space()] or ../tei:name[normalize-space()])] | tei:placeName | tei:orgName)[1]))"/>
-    <xsl:variable name="c" select="translate(substring($vedette, 1, 1), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')"/>
-    <xsl:choose>
-      <!-- contains(…, '') est vrai : le test sur $c non vide est nécessaire. -->
-      <xsl:when test="$c != '' and contains('ABCDEFGHIJKLMNOPQRSTUVWXYZ', $c)">
-        <xsl:value-of select="$c"/>
-      </xsl:when>
-      <xsl:otherwise>#</xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
   <!-- Parcours récursif de l'alphabet : un bouton par lettre REPRÉSENTÉE
        (key() renvoie un node-set vide pour les autres). « Toutes » est le
        choix par défaut : aucune règle :has() ne s'applique, tout reste visible. -->
-  <xsl:template name="christofle-lettres-bar">
-    <nav class="chr-lettres" aria-label="Filtrer l’index par lettre">
-      <span class="chr-lettres-label">Lettre :</span>
-      <span class="chr-lettre chr-lettre-tous">
-        <input type="radio" name="chr-lettre" value="__tous__" id="chr-lettre-tous" class="chr-lettre-radio" checked="checked"/>
-        <label for="chr-lettre-tous">Toutes</label>
-      </span>
-      <xsl:call-template name="christofle-lettres-bar-loop"/>
-    </nav>
-  </xsl:template>
-
-  <xsl:template name="christofle-lettres-bar-loop">
-    <xsl:param name="alphabet" select="'ABCDEFGHIJKLMNOPQRSTUVWXYZ'"/>
-    <xsl:if test="$alphabet != ''">
-      <xsl:variable name="L" select="substring($alphabet, 1, 1)"/>
-      <xsl:if test="key('chr-idx-lettre', $L)">
-        <span class="chr-lettre">
-          <input type="radio" name="chr-lettre" value="{$L}" id="chr-lettre-{$L}" class="chr-lettre-radio"/>
-          <label for="chr-lettre-{$L}" title="{count(key('chr-idx-lettre', $L))} vedettes"><xsl:value-of select="$L"/></label>
-        </span>
-      </xsl:if>
-      <xsl:call-template name="christofle-lettres-bar-loop">
-        <xsl:with-param name="alphabet" select="substring($alphabet, 2)"/>
-      </xsl:call-template>
-    </xsl:if>
-  </xsl:template>
-
-  <xsl:template match="tei:listPerson | tei:listPlace" priority="8">
-    <xsl:apply-templates select="tei:person | tei:org | tei:place"/>
-  </xsl:template>
-
   <!-- Fiche organisme. agent_chrx2 (2026-09-14).
        Le <listPerson> de l'index compte 1078 enfants : 1075 <person> et 3 <org>
        (o-0001 « Châtelet, Compagnons du », o-0002 « Saint-Aignan, chapelains de »,
@@ -862,46 +969,7 @@
        RETOUR EN ARRIÈRE : supprimer ce modèle, retirer « tei:org » ci-dessus, et
        retirer « listPerson/org » du @match du refsDecl — les 3 <org> redeviennent
        invisibles sans que le TEI perde quoi que ce soit. -->
-  <xsl:template match="tei:org" priority="8">
-    <article id="{@xml:id}" class="index-entry org-entry">
-      <xsl:attribute name="data-lettre"><xsl:call-template name="christofle-index-lettre"/></xsl:attribute>
-      <p>
-        <span class="orgName-entry"><xsl:value-of select="normalize-space(tei:orgName[1])"/></span>
-        <xsl:call-template name="christofle-index-refs"/>
-        <xsl:apply-templates select="tei:note" mode="christofle-index-seealso"/>
-      </p>
-    </article>
-  </xsl:template>
-
   <!-- Fiche personne -->
-  <xsl:template match="tei:person" priority="8">
-    <article id="{@xml:id}" class="index-entry person-entry">
-      <!-- D14e2 : cible des règles de filtre par lettre (barre .chr-lettres). -->
-      <xsl:attribute name="data-lettre"><xsl:call-template name="christofle-index-lettre"/></xsl:attribute>
-      <p>
-        <span class="persName-entry">
-          <!-- 2026-09-13 : SEULEMENT le premier <persName>. 24 personnes du corpus en portent
-               deux (formes graphiques concurrentes du même nom), et les rendre l'un après
-               l'autre donnait « Barbechon, Baubin Barbachon, Baubin » — le nom complet deux
-               fois de suite, sans séparateur. L'ÉLEC n'imprime pas cela : il joint les formes
-               du NOM DE FAMILLE par une barre oblique et ne répète pas le prénom, soit
-               « Barbechon / Barbachon, Baubin » (relevé dans la source de
-               index-lieux-et-personnes/lettre-B.html). Les variantes sont donc passées au
-               modèle de la vedette, qui les insère au bon endroit. -->
-          <xsl:apply-templates select="tei:persName[1]" mode="christofle-index-name">
-            <xsl:with-param name="variantes" select="tei:persName[position() > 1]"/>
-          </xsl:apply-templates>
-          <xsl:if test="tei:note[@type = 'relation']">
-            <xsl:text>, </xsl:text>
-            <span class="persName-note"><xsl:value-of select="normalize-space(tei:note[@type = 'relation'])"/></span>
-          </xsl:if>
-        </span>
-        <xsl:call-template name="christofle-index-refs"/>
-        <xsl:apply-templates select="tei:note[not(@type = 'relation')]" mode="christofle-index-seealso"/>
-      </p>
-    </article>
-  </xsl:template>
-
   <!-- Nom en vedette : « Surname, Forename nameLink », « Forename, roleName »… -->
   <xsl:template match="tei:persName" mode="christofle-index-name">
     <!-- Les autres <persName> de la même personne : leurs noms de famille viennent s'ajouter
@@ -910,8 +978,7 @@
     <xsl:choose>
       <xsl:when test="tei:surname">
         <span class="surname"><xsl:value-of select="normalize-space(tei:surname)"/></span>
-        <xsl:for-each select="$variantes/tei:surname[normalize-space()]
-                              [normalize-space() != normalize-space(current()/tei:surname)]">
+        <xsl:for-each select="$variantes/tei:surname[normalize-space()]                               [normalize-space() != normalize-space(current()/tei:surname)]">
           <xsl:text> / </xsl:text>
           <span class="surname surname-variante"><xsl:value-of select="normalize-space(.)"/></span>
         </xsl:for-each>
@@ -941,47 +1008,14 @@
   </xsl:template>
 
   <!-- Fiche lieu : présentation historique "ADON [ Loiret, Briare ]". -->
-  <xsl:template match="tei:place" priority="8">
-    <article id="{@xml:id}" class="index-entry place-entry">
-      <!-- D14e2 : idem. Les sous-entrées de lieux en héritent aussi, mais les
-           règles de filtre ne visent que les enfants directs de
-           .christofle-index-entries : une sous-entrée suit toujours son parent. -->
-      <xsl:attribute name="data-lettre"><xsl:call-template name="christofle-index-lettre"/></xsl:attribute>
-      <p>
-        <!-- 2026-09-13 : 37 lieux portent deux ou trois <placeName> (forme historique et forme
-             actuelle). Les rendre à la suite les collait : « Saint-Privé-lez-OrléansSaint-Pryvé-
-             Saint-Mesmin ». L'ÉLEC les sépare par une barre oblique — « Saint-Privé-lez-Orléans /
-             Saint-Pryvé-Saint-Mesmin » (relevé dans index-lieux-et-personnes/lettre-S.html). -->
-        <span class="placeName-entry">
-          <xsl:for-each select="tei:placeName">
-            <xsl:if test="position() > 1"><xsl:text> / </xsl:text></xsl:if>
-            <xsl:apply-templates select="." mode="christofle-index-inline"/>
-          </xsl:for-each>
-        </span>
-        <xsl:if test="tei:location">
-          <xsl:text> [ </xsl:text>
-          <span class="location"><xsl:apply-templates select="tei:location/*" mode="christofle-index-loc"/></span>
-          <xsl:text> ]</xsl:text>
-        </xsl:if>
-        <xsl:call-template name="christofle-index-refs"/>
-        <xsl:apply-templates select="tei:note" mode="christofle-index-seealso"/>
-      </p>
-
-      <!-- Sous-entrées de lieux : abbaye, église, paroisse, etc. -->
-      <xsl:if test="tei:place">
-        <div class="index-subentries">
-          <xsl:for-each select="tei:place">
-            <xsl:sort select="translate(normalize-space(string(tei:placeName)), 'abcdefghijklmnopqrstuvwxyzàáâäãåÀÁÂÄÃÅçÇéèêëÉÈÊËíìîïÍÌÎÏñÑóòôöõÓÒÔÖÕùúûüÙÚÛÜÿýŸÝœŒæÆ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZAAAAAAAAAAAACCEEEEEEEEIIIIIIIINNOOOOOOOOOOUUUUUUUUYYYYOOAA')" data-type="text" lang="fr"/>
-            <xsl:apply-templates select="."/>
-          </xsl:for-each>
-        </div>
-      </xsl:if>
-    </article>
-  </xsl:template>
-
   <!-- placeName avec <term> inline : « Bannier (porte) » -->
-  <xsl:template match="tei:term" mode="christofle-index-inline"><span class="term"><xsl:value-of select="normalize-space(.)"/></span><xsl:text> </xsl:text></xsl:template>
-  <xsl:template match="text()" mode="christofle-index-inline"><xsl:value-of select="."/></xsl:template>
+  <xsl:template match="tei:term" mode="christofle-index-inline">
+    <span class="term"><xsl:value-of select="normalize-space(.)"/></span>
+    <!-- 2026-10-06 : pas de blanc devant « ) » ni devant un blanc de la source :
+         96 vedettes sortaient « Saint-Euverte (abbaye ) ». -->
+    <xsl:variable name="suite" select="string(following-sibling::node()[1])"/>
+    <xsl:if test="not(starts-with($suite, ')') or starts-with($suite, ' ') or $suite = '')"><xsl:text> </xsl:text></xsl:if>
+  </xsl:template>
   <!-- 2026-09-29 : surnom d'un lieu, « La Sauverie, dit La Roigelerie » comme
        l'ÉLEC. Le TEI colle <addName> au nom (« La Sauverie<addName>dit … ») :
        sans ce modèle la vedette sortait « La Sauveriedit La Roigelerie ».
@@ -1032,7 +1066,10 @@
           <xsl:when test="self::tei:ref">
             <xsl:value-of select="normalize-space(.)"/>
           </xsl:when>
-          <xsl:otherwise><xsl:value-of select="normalize-space(.)"/><xsl:text> </xsl:text></xsl:otherwise>
+          <!-- 2026-10-06 : un blanc seulement entre deux mots ; le texte vide qui suit
+               le dernier renvoi donnait « (voir Notre-Dame ) ». -->
+          <xsl:when test="normalize-space(.) = ''"/>
+          <xsl:otherwise><xsl:value-of select="normalize-space(.)"/><xsl:if test="following-sibling::node()[normalize-space()]"><xsl:text> </xsl:text></xsl:if></xsl:otherwise>
         </xsl:choose>
       </xsl:for-each>
       <xsl:text>)</xsl:text>
@@ -1040,17 +1077,6 @@
   </xsl:template>
 
   <!-- Renvois aux minutes, déduits de @corresp="#minute-120 #minute-121" -->
-  <xsl:template name="christofle-index-refs">
-    <xsl:if test="@corresp">
-      <span class="index-refs">
-        <xsl:text>&#160;: </xsl:text>
-        <xsl:call-template name="christofle-refs-loop">
-          <xsl:with-param name="refs" select="normalize-space(@corresp)"/>
-        </xsl:call-template>
-      </span>
-    </xsl:if>
-  </xsl:template>
-
   <xsl:template name="christofle-refs-loop">
     <xsl:param name="refs"/>
     <xsl:param name="first" select="true()"/>
@@ -1058,7 +1084,7 @@
     <xsl:variable name="tail" select="normalize-space(substring-after($refs, ' '))"/>
     <xsl:variable name="mid" select="substring-after($head, '#minute-')"/>
     <xsl:if test="$mid != ''">
-      <xsl:if test="not($first)">, </xsl:if>
+      <xsl:if test="not($first)"><span class="chr-sep"> · </span></xsl:if>
       <a class="internalLink" title="Consulter la minute" href="{$elec-base}/christofle/document/christofle_1437?refId=minute-{$mid}">
         <xsl:value-of select="number($mid)"/>
       </a>
@@ -1078,21 +1104,12 @@
        l'identifiant de la publication d'origine), seule la cible devient la route locale.
        Table et bloc produits par dots-autopilot/scripts/d5_legacy_links_fix.py. -->
   <!-- portail ELEC -->
-  <xsl:template match="tei:title[../tei:idno[@type = 'URI'][normalize-space(.) = 'http://elec.enc.sorbonne.fr' or normalize-space(.) = 'http://elec.enc.sorbonne.fr/']]" priority="14">
-    <a class="title d5-local" href="{$elec-base}/"><xsl:apply-templates/></a>
-  </xsl:template>
   <!-- renvoi bibliographique vers cette edition -->
-  <xsl:template match="tei:ref[@target = 'http://elec.enc.sorbonne.fr/christofle/']" priority="14">
-    <a class="ref d5-local" href="{$elec-base}/christofle"><xsl:apply-templates/></a>
-  </xsl:template>
   <!-- 2026-09-12 : dernier renvoi vers l'ancien site, dans l'EXEMPLE DE CITATION du teiHeader
        (« En ligne : http://elec.enc.sorbonne.fr/christofle/notes/note-136.html »). La page existe
        ici sous `minute-136` (vérifié dans la navigation DTS : 411 unités, dont minute-136). Même
        règle que le reste du bloc D5 : le TEXTE reste mot pour mot — c'est l'adresse de la
        publication d'origine, citée comme telle — et seule la cible devient la route locale. -->
-  <xsl:template match="tei:note[@type = 'onLineAccess']/tei:ref[normalize-space(@target) = '#minute-136'] | tei:ref[normalize-space(@target) = 'http://elec.enc.sorbonne.fr/christofle/notes/note-136.html']" priority="15">
-    <a class="ref d5-local" href="{$elec-base}/christofle/document/christofle_1437?refId=minute-136"><xsl:apply-templates/></a>
-  </xsl:template>
   <!-- D5-FIN -->
 
 </xsl:transform>
