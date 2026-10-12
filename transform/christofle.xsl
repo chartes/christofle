@@ -2,8 +2,6 @@
 <xsl:transform xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns="http://www.w3.org/1999/xhtml" xmlns:tei="http://www.tei-c.org/ns/1.0" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:chr="urn:christofle:fonctions" version="1.1" exclude-result-prefixes="tei xs chr">
 
   <xsl:import href="../../renderers/hteiml/xsl/tei2html.xsl"/>
-  <xsl:include href="garde.xsl"/><!-- 2026-10-08 : page de garde commune à tous les projets -->
-  <xsl:include href="ordinaux.xsl"/> <!-- chantier ordinaux 2026-10-08 -->
 
   <!-- 2026-10-04 (C7) : chemins selon le serveur. Dans le dépôt, l'application est
        servie sous /elec/ et l'API sous /dots/api/dts/ (dev.chartes.psl.eu) ; la copie
@@ -198,7 +196,7 @@
                 <xsl:for-each select="current-group()">
                   <xsl:sort select="number(tei:ref)" data-type="number"/>
                   <xsl:if test="position() != 1"><span class="chr-sep"> · </span></xsl:if>
-                  <a title="Consulter la note" class="internalLink" href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                  <a title="Consulter la note" class="internalLink" href="?refId={substring-after(tei:ref/@target, '#')}">
                     <xsl:value-of select="tei:ref"/>
                   </a>
                   <xsl:variable name="jour" select="substring-before(concat(normalize-space(tei:date), ' '), ' ')"/>
@@ -214,8 +212,13 @@
     </section>
   </xsl:template>
 
-  <!-- Les mois utilisent l'argument TEI précalculé dans data/christofle.xml. -->
-  <xsl:template match="*[local-name() = 'wrapper'][not(tei:teiHeader)]" priority="12">
+  <!-- Les mois utilisent l'argument TEI précalculé dans data/christofle.xml.
+       2026-10-12 : depuis DoTS 0fb0c43, une page de regroupement arrive en
+       <dts:wrapper><group>…</group></dts:wrapper> : le nœud cité (mois, notes,
+       introduction) est gardé. Le même traitement s'applique donc aussi à cet
+       enfant, sinon hteiml rend son <head> en plus (« mars » deux fois). -->
+  <xsl:template match="*[local-name() = 'wrapper'][not(tei:teiHeader)]
+                       | *[local-name() = 'wrapper']/*[tei:argument[@ana = '#month-index' or @ana = '#intro-index' or @ana = '#notes-index']]" priority="12">
     <xsl:choose>
       <xsl:when test="tei:argument[@ana = '#month-index']">
         <xsl:apply-templates select="tei:argument[@ana = '#month-index']"/>
@@ -273,7 +276,7 @@
                   <span class="sep"> &gt;&gt; </span>
                 </xsl:when>
               </xsl:choose>
-              <a class="internalLink" href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+              <a class="internalLink" href="?refId={substring-after(tei:ref/@target, '#')}">
                 <xsl:choose>
                   <!-- barre des jours : le quantième suffit, le mois est au-dessus -->
                   <xsl:when test="tei:ref/@type = 'day'">
@@ -358,7 +361,7 @@
     </xsl:variable>
     <xsl:choose>
       <xsl:when test="$cible != ''">
-        <a class="internalLink" href="{$elec-base}/christofle/document/christofle_1437?refId={$cible}">
+        <a class="internalLink" href="?refId={$cible}">
           <xsl:apply-templates/>
         </a>
       </xsl:when>
@@ -412,7 +415,7 @@
               <h3 class="jour-head"><xsl:value-of select="normalize-space(tei:date)"/></h3>
               <xsl:for-each select="$minutes[tei:date/@when = $when]">
                 <div class="jour-note">
-                  <a class="internalLink note-link" href="{$elec-base}/christofle/document/christofle_1437?refId={substring-after(tei:ref/@target, '#')}">
+                  <a class="internalLink note-link" href="?refId={substring-after(tei:ref/@target, '#')}">
                     <span class="note-num"><xsl:value-of select="tei:ref"/>.</span>
                     <xsl:text> </xsl:text>
                     <xsl:variable name="nature" select="normalize-space(tei:term[@type = 'natureJuridique'][1])"/>
@@ -530,8 +533,7 @@
   <xsl:template name="christofle-index-href">
     <xsl:param name="cible"/>
     <xsl:param name="lettre"/>
-    <xsl:value-of select="$elec-base"/>
-    <xsl:text>/christofle/document/christofle_1437?refId=</xsl:text>
+    <xsl:text>?refId=</xsl:text>
     <xsl:choose>
       <!-- Entrée connue : page de la lettre + ancre, comme l'ÉLEC. -->
       <!-- 2026-10-08 : les pages par lettre ne sont plus des unités (lettres retirées du registre :
@@ -650,11 +652,11 @@
       <xsl:variable name="facs-vignette" select="concat(substring-before($facs-file, '.jpg'), '_ptt.jpg')"/>
       <details class="christofle-facsimile">
         <summary title="Afficher en grand le fac-similé du folio {$folio-label}">
-          <img class="christofle-facsimile-vignette" src="{$elec-base}/images/christofle/vignettes/{$facs-vignette}" alt="Fac-similé du folio {$folio-label}"/>
+          <img class="christofle-facsimile-vignette" src="../../images/christofle/vignettes/{$facs-vignette}" alt="Fac-similé du folio {$folio-label}"/>
           <span class="christofle-facsimile-ouvrir">Fol. <xsl:value-of select="$folio-label"/> — agrandir le fac-similé</span>
           <span class="christofle-facsimile-fermer">Fol. <xsl:value-of select="$folio-label"/> — réduire le fac-similé</span>
         </summary>
-        <img class="christofle-facsimile-image" src="{$elec-base}/images/christofle/sources/{$facs-file}" alt="Fac-similé du folio {$folio-label}" loading="lazy"/>
+        <img class="christofle-facsimile-image" src="../../images/christofle/sources/{$facs-file}" alt="Fac-similé du folio {$folio-label}" loading="lazy"/>
         <span class="christofle-facsimile-legende">Archives départementales du Loiret, 3E 10144, fol. <xsl:value-of select="$folio-label"/></span>
       </details>
     </xsl:if>
@@ -663,7 +665,7 @@
   <!-- Les images de l'introduction sont désormais servies par le répertoire
        statique du projet DoTS, plutôt que par les chemins relatifs Élec. -->
   <xsl:template match="tei:graphic" priority="10">
-    <img class="christofle-image" src="{$elec-base}/images/christofle/{substring-after(@url, 'images/')}" alt="{normalize-space(../tei:figDesc)}"/>
+    <img class="christofle-image" src="../../images/christofle/{substring-after(@url, 'images/')}" alt="{normalize-space(../tei:figDesc)}"/>
   </xsl:template>
 
   <!-- ===================================================================
@@ -1085,7 +1087,7 @@
     <xsl:variable name="mid" select="substring-after($head, '#minute-')"/>
     <xsl:if test="$mid != ''">
       <xsl:if test="not($first)"><span class="chr-sep"> · </span></xsl:if>
-      <a class="internalLink" title="Consulter la minute" href="{$elec-base}/christofle/document/christofle_1437?refId=minute-{$mid}">
+      <a class="internalLink" title="Consulter la minute" href="?refId=minute-{$mid}">
         <xsl:value-of select="number($mid)"/>
       </a>
     </xsl:if>
