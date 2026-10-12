@@ -168,8 +168,6 @@
             <citeStructure match="/TEI[1]/text[1]/front[1]/div[@xml:id='introduction']" use="@xml:id" unit="Introduction">
                <citeData property="dct:title" use="normalize-space(head[1])"/><citeStructure match="div" use="@xml:id" unit="Section"><citeData property="dct:title" use="normalize-space(head[1])"/></citeStructure>
             </citeStructure>
-            <citeStructure match="/TEI[1]/text[1]/front[1]/div[@xml:id='credits']" use="@xml:id" unit="Crédits"><citeData property="dct:title" use="'Crédits'"/></citeStructure>
-            <citeStructure match="/TEI[1]/text[1]/front[1]/div[@xml:id='mentionsLegales']" use="@xml:id" unit="mentionsLegales"><citeData property="dct:title" use="'Mentions légales'"/></citeStructure>
             <citeStructure match="/TEI[1]/text[1]/group[1]" use="@xml:id" unit="editionNotes">
                <citeData property="dct:title" use="'Édition des notes'"/><citeStructure match="group" use="@xml:id" unit="Mois">
                   <citeData property="dct:title" use="normalize-space(head[1])"/><citeStructure match="text[not(@type='meta-information')]" use="@xml:id" unit="Note">
