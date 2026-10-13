@@ -19,6 +19,10 @@
 
   <xsl:import href="../../renderers/hteiml/xsl/tei2html.xsl"/>
 
+  <!-- Pas d'indentation : dots-vue compile la sortie en gabarit Vue, qui retire les blancs
+       contenant un saut de ligne entre deux balises (« Adam de » devenait « Adamde »). -->
+  <xsl:output indent="no"/>
+
   <!-- Unité qui porte tout l'index des lieux et personnes (servie entière). -->
   <xsl:variable name="index-ref" select="'r65205'"/>
 
