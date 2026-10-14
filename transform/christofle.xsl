@@ -22,6 +22,8 @@
   <xsl:import href="../../renderers/hteiml/xsl/tei2html.xsl"/>
   <!-- Tableaux triables et filtrables : module commun, copie à côté de cette feuille. -->
   <xsl:import href="tableau-filtrable.xsl"/>
+  <!-- 2026-10-14 : index des types d'actes en liste repliable (module commun, classes lr-*). -->
+  <xsl:import href="liste-repliable.xsl"/>
   <xsl:variable name="tf-prefixe" select="'chr'"/>
 
   <!-- Pas d'indentation : dots-vue compile la sortie en gabarit Vue, qui retire les blancs
@@ -407,26 +409,35 @@
   <!-- ================================================================
        Index des types d'actes — ÉLEC index-des-types-d-actes.html
        « Accord : 9 (8 janvier) ; 26 (16 janvier) ; … »
+       2026-10-14 : liste repliable (module liste-repliable.xsl) : une ligne par type
+       (« Accord … 23 actes »), dépliée sur ses minutes en colonnes (« 9 — 8 janvier »).
        ================================================================ -->
   <xsl:template match="tei:div[@type = 'index-types-actes']">
     <section id="content" class="actTypes">
       <section>
         <h1><xsl:value-of select="normalize-space(tei:head)"/></h1>
-        <xsl:for-each select="tei:list[@type = 'act-types']/tei:item">
-          <article>
-            <span class="index-entry"><span class="actType-entry"><xsl:value-of select="chr:capitale(tei:label)"/></span></span>
-            <span class="index-refs">
-              <xsl:text> : </xsl:text>
-              <xsl:for-each select="tei:list/tei:item">
-                <xsl:if test="position() > 1"> ; </xsl:if>
-                <a title="Consulter la note" class="internalLink" href="?refId={substring-after(tei:ref/@target, '#')}"><xsl:value-of select="tei:ref"/></a>
-                <xsl:text> (</xsl:text>
-                <xsl:call-template name="date-ordinal"><xsl:with-param name="texte" select="normalize-space(tei:date)"/></xsl:call-template>
-                <xsl:text>)</xsl:text>
-              </xsl:for-each>
-            </span>
-          </article>
-        </xsl:for-each>
+        <div class="lr-liste">
+          <xsl:for-each select="tei:list[@type = 'act-types']/tei:item">
+            <xsl:call-template name="lr-entree">
+              <xsl:with-param name="titre"><xsl:value-of select="chr:capitale(tei:label)"/></xsl:with-param>
+              <xsl:with-param name="nb" select="count(tei:list/tei:item)"/>
+              <xsl:with-param name="unite" select="'acte'"/>
+              <xsl:with-param name="contenu">
+                <ul class="lr-colonnes">
+                  <xsl:for-each select="tei:list/tei:item">
+                    <li>
+                      <a title="Consulter la minute" class="internalLink" href="?refId={substring-after(tei:ref/@target, '#')}"><xsl:value-of select="tei:ref"/></a>
+                      <span class="chr-type-date">
+                        <xsl:text> — </xsl:text>
+                        <xsl:call-template name="date-ordinal"><xsl:with-param name="texte" select="normalize-space(tei:date)"/></xsl:call-template>
+                      </span>
+                    </li>
+                  </xsl:for-each>
+                </ul>
+              </xsl:with-param>
+            </xsl:call-template>
+          </xsl:for-each>
+        </div>
       </section>
     </section>
   </xsl:template>
