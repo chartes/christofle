@@ -11,7 +11,10 @@
      Contrat HTML :
        div.lr-liste                                  enveloppe (le corpus la pose)
          details.lr-groupe[open]                     groupe, ouvert à l'arrivée
-           summary > span.lr-groupe-titre > span.lr-groupe-nb   titre, (nombre)
+           summary > hN.head.lr-groupe-titre > span.lr-groupe-nb   titre, (nombre)
+                                                     (2026-10-15 : vrai intertitre, h2 par défaut,
+                                                     mis en forme par hteiml, comme les rubriques
+                                                     de bibliographie)
            details.lr-entree[id]                     entrée, repliée
              summary > span.lr-entree-titre + span.lr-entree-nb  titre, « N unités » à droite
              div.lr-entree-corps                     contenu déplié
@@ -29,18 +32,20 @@
     <xsl:param name="titre"/>
     <xsl:param name="nb" select="()"/>
     <xsl:param name="ouvert" as="xs:boolean" select="true()"/>
+    <xsl:param name="niveau" as="xs:integer" select="2"/>
     <xsl:param name="contenu"/>
     <details class="lr-groupe">
       <xsl:if test="$id"><xsl:attribute name="id" select="$id"/></xsl:if>
       <xsl:if test="$ouvert"><xsl:attribute name="open">open</xsl:attribute></xsl:if>
       <summary>
-        <span class="lr-groupe-titre">
+        <xsl:element name="h{$niveau}">
+          <xsl:attribute name="class">head lr-groupe-titre</xsl:attribute>
           <xsl:copy-of select="$titre"/>
           <xsl:if test="exists($nb)">
             <xsl:text> </xsl:text>
             <span class="lr-groupe-nb"><xsl:value-of select="concat('(', $nb, ')')"/></span>
           </xsl:if>
-        </span>
+        </xsl:element>
       </summary>
       <xsl:copy-of select="$contenu"/>
     </details>
