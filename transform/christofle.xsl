@@ -121,7 +121,7 @@
       </xsl:call-template>
       <section>
         <article>
-          <h1><xsl:value-of select="normalize-space($arg/tei:head)"/> &gt; <xsl:value-of select="normalize-space($partie/tei:head)"/></h1>
+          <h1 class="head"><xsl:value-of select="normalize-space($partie/tei:head)"/></h1>
           <xsl:apply-templates select="$partie/node()[not(self::tei:head)]"/>
         </article>
       </section>
@@ -133,51 +133,24 @@
     <section id="content" class="paratext">
       <section>
         <article>
-          <h1>Introduction &gt; <xsl:value-of select="normalize-space(tei:head)"/></h1>
+          <h1 class="head"><xsl:value-of select="normalize-space(tei:head)"/></h1>
           <xsl:apply-templates select="node()[not(self::tei:head)]"/>
         </article>
       </section>
     </section>
   </xsl:template>
 
-  <!-- ================================================================
-       Édition des notes (r1609) : les douze mois et leurs jours.
-       L'ÉLEC n'avait pas de page à ce niveau (son menu menait à la note 1) ;
-       on reprend ses deux barres #months-list et #days-list, un mois par ligne.
-       ================================================================ -->
+  <!-- 2026-10-19 : « Édition des notes » (r1609) : la liste des mois et des jours de l'ÉLEC est retirée ;
+       la page garde le sommaire de DoTS (décision de Maxime). -->
   <xsl:template match="tei:group[tei:argument[@ana = '#notes-index']]">
-    <section id="content" class="paratext">
-      <section>
-        <article>
-          <h1>Édition des notes</h1>
-          <xsl:for-each select="tei:argument/tei:list/tei:item">
-            <article class="notes-mois">
-              <p>
-                <a class="internalLink" href="?refId={substring-after(tei:ref/@target, '#')}">
-                  <xsl:value-of select="chr:capitale(tei:ref)"/>
-                </a>
-                <xsl:text> (</xsl:text><xsl:value-of select="tei:num"/>
-                <xsl:value-of select="if (number(tei:num) = 1) then ' note' else ' notes'"/><xsl:text>) : </xsl:text>
-                <xsl:for-each select="tei:list[@type = 'days']/tei:item">
-                  <xsl:sort select="tei:ref/@n"/>
-                  <xsl:if test="position() > 1"><span class="sep"> | </span></xsl:if>
-                  <a class="internalLink" href="?refId={substring-after(tei:ref/@target, '#')}">
-                    <xsl:value-of select="number(substring(tei:ref/@n, 9))"/>
-                  </a>
-                </xsl:for-each>
-              </p>
-            </article>
-          </xsl:for-each>
-        </article>
-      </section>
-    </section>
+    <h1 class="head"><xsl:value-of select="(normalize-space(tei:head[1])[. != ''], 'Édition des notes')[1]"/></h1>
   </xsl:template>
 
   <!-- ================================================================
        Note (minute) — ÉLEC notes/note-NNN.html
        ================================================================ -->
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]">
-    <xsl:apply-templates select="tei:front/tei:argument[@ana = '#note-nav']"/>
+    <!-- 2026-10-19 : barres de navigation de l'ÉLEC (mois, jours, minutes voisines) retirées : sommaire et flèches de dots-vue -->
     <section id="content" class="mins">
       <section id="facsimile" class="col">
         <xsl:apply-templates select="tei:body//tei:pb[@facs]" mode="facsimile"/>
@@ -185,23 +158,23 @@
       <section id="text">
         <section id="edition">
           <article id="edition-text">
-            <header class="recordMetadata">
-              <h2>
-                <span class="recordNumber"><xsl:value-of select="tei:front/tei:docTitle/tei:titlePart[@type = 'number']"/></span>
-                <br/>
-                <span class="recordDate">
-                  <time datetime="{tei:front/tei:docDate/tei:date/@when}">
-                    <xsl:call-template name="date-ordinal"><xsl:with-param name="texte" select="normalize-space(tei:front/tei:docDate/tei:date)"/></xsl:call-template>
-                  </time>
-                </span>
-              </h2>
-              <p class="recordSummary">
-                <xsl:if test="tei:front/tei:index/tei:term[@type = 'natureJuridique']">
-                  <span class="recordType"><xsl:value-of select="chr:capitale(tei:front/tei:index/tei:term[@type = 'natureJuridique'][1])"/></span>
-                  <xsl:text>. — </xsl:text>
-                </xsl:if>
-                <xsl:apply-templates select="tei:front/tei:div[@type = 'summary']/tei:p/node()"/>
-              </p>
+            <!-- 2026-10-19 : en-tête au modèle de hteiml (comme les actes des autres corpus) : n°, date, analyse -->
+            <header class="front">
+              <div class="docNum"><xsl:value-of select="tei:front/tei:docTitle/tei:titlePart[@type = 'number']"/></div>
+              <span class="docDate">
+                <time datetime="{tei:front/tei:docDate/tei:date/@when}">
+                  <xsl:call-template name="date-ordinal"><xsl:with-param name="texte" select="normalize-space(tei:front/tei:docDate/tei:date)"/></xsl:call-template>
+                </time>
+              </span>
+              <div class="argument">
+                <p>
+                  <xsl:if test="tei:front/tei:index/tei:term[@type = 'natureJuridique']">
+                    <span class="recordType"><xsl:value-of select="chr:capitale(tei:front/tei:index/tei:term[@type = 'natureJuridique'][1])"/></span>
+                    <xsl:text>. — </xsl:text>
+                  </xsl:if>
+                  <xsl:apply-templates select="tei:front/tei:div[@type = 'summary']/tei:p/node()"/>
+                </p>
+              </div>
             </header>
             <div><xsl:apply-templates select="tei:body/tei:div/node()"/></div>
           </article>
