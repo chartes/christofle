@@ -115,10 +115,7 @@
     <xsl:variable name="arg" select="tei:argument[@ana = '#intro-index']"/>
     <xsl:variable name="partie" select="$arg/tei:floatingText[@type = 'first-part']/tei:body"/>
     <section id="content" class="paratext">
-      <xsl:call-template name="intro-menu">
-        <xsl:with-param name="liste" select="$arg/tei:list"/>
-        <xsl:with-param name="courant" select="$arg/tei:list/tei:item[1]/tei:ref/@target"/>
-      </xsl:call-template>
+      <!-- 2026-10-27 : plus de liste des parties ici (intro-menu) : la TOC de dots-vue suffit. -->
       <section>
         <article>
           <h1 class="head"><xsl:value-of select="normalize-space($partie/tei:head)"/></h1>
@@ -135,6 +132,11 @@
         <article>
           <h1 class="head"><xsl:value-of select="normalize-space(tei:head)"/></h1>
           <xsl:apply-templates select="node()[not(self::tei:head)]"/>
+          <!-- 2026-10-27 : corps des notes de la partie (hteiml ne les sort que pour tei:text) :
+               sans lui, l'appel de note pointe vers un id absent. -->
+          <xsl:call-template name="footnotes">
+            <xsl:with-param name="cont" select="."/>
+          </xsl:call-template>
         </article>
       </section>
     </section>
@@ -292,21 +294,6 @@
   </xsl:template>
 
   <!-- ==== 3. PROPRE AU PROJET ==== -->
-
-  <xsl:template name="intro-menu">
-    <xsl:param name="liste"/>
-    <xsl:param name="courant"/>
-    <nav id="specific-menu-paratext">
-      <ul>
-        <xsl:for-each select="$liste/tei:item">
-          <li>
-            <xsl:if test="tei:ref/@target = $courant"><xsl:attribute name="class">selected</xsl:attribute></xsl:if>
-            <a href="?refId={substring-after(tei:ref/@target, '#')}"><xsl:value-of select="normalize-space(tei:ref)"/></a>
-          </li>
-        </xsl:for-each>
-      </ul>
-    </nav>
-  </xsl:template>
 
   <xsl:template match="tei:graphic">
     <img src="../../images/christofle/{substring-after(@url, 'images/')}" alt="{normalize-space(../tei:figDesc)}"/>
