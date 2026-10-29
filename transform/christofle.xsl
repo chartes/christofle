@@ -599,6 +599,17 @@
     </xsl:if>
   </xsl:template>
 
+  <!-- 2026-10-29 — ENTRÉE D'INDEX SERVIE SEULE. Les 1 512 entrées (personnes p-, lieux l-, organismes o-) sont des unités
+       citables du sommaire DoTS : ouvertes seules (« ?refId=l-0056 »), elles sortaient en balises rouges de débogage
+       (<person>, <place>, <location>, <district> : hteiml ne les connaît pas hors de l'index). Vedette rendue comme dans
+       le tableau de l'index (chr-cellule-nom), une ligne par entrée, sous-entrées en retrait. -->
+  <xsl:template match="*[local-name() = 'wrapper']/(tei:person | tei:place | tei:org) | tei:place/tei:place[ancestor::*[local-name() = 'wrapper']]" priority="30">
+    <div class="chr-fiche{if (parent::tei:place) then ' chr-sous-entree' else ''}" id="{@xml:id}">
+      <p class="noindent"><xsl:call-template name="chr-cellule-nom"/></p>
+      <xsl:apply-templates select="tei:place"/>
+    </div>
+  </xsl:template>
+
   <!-- ==== 4. MÉCANISMES COMMUNS : tableau filtrable (tf-*), liens vers l'ancien site (D5), liens internes entre fragments ==== -->
 
   <!-- Lien de téléchargement (partie « Télécharger ») : le TEI servi par DoTS. -->
