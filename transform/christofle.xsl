@@ -390,8 +390,10 @@
     </figure>
   </xsl:template>
 
-  <!-- Ajout marginal : « Dans la marge gauche : a. » -->
-  <xsl:template match="tei:add[starts-with(@place, 'margin')]">
+  <!-- Ajout marginal : « Dans la marge gauche : a. » ; 2026-10-30 : aussi les ajouts qui n'ont qu'une mention (25 <add n>
+       sans @place, suite d'un ajout en marge : « et au-dessous », « et en-dessous », « Ainsi que ») ; ils sortaient
+       en <ins> souligné et perdaient leur mention. -->
+  <xsl:template match="tei:add[starts-with(@place, 'margin')] | tei:add[@n][not(@place)]">
     <span class="add">
       <xsl:if test="@n"><span class="editor-note"><xsl:value-of select="@n"/> : </span><xsl:text> </xsl:text></xsl:if>
       <span class="margin-addition"><xsl:apply-templates/></span>
