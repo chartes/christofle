@@ -38,8 +38,6 @@
   <!-- Unité qui porte tout l'index des lieux et personnes (servie entière). -->
   <xsl:variable name="index-ref" select="'r65205'"/>
 
-  <xsl:variable name="mois" select="('janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
-                                     'août', 'septembre', 'octobre', 'novembre', 'décembre')"/>
 
   <xsl:key name="note-par-id" match="tei:note[@xml:id]" use="@xml:id"/>
 
@@ -185,48 +183,6 @@
     </section>
   </xsl:template>
 
-  <!-- Barres de navigation de l'ÉLEC : mois, jours du mois, notes voisines. -->
-  <xsl:template match="tei:argument[@ana = '#note-nav']">
-    <nav id="specific-menu-minutes">
-      <ul id="months-list">
-        <xsl:for-each select="tei:list[@type = 'months']/tei:item">
-          <li>
-            <xsl:if test="tei:ref/@ana = 'selected'"><xsl:attribute name="class">selected</xsl:attribute></xsl:if>
-            <a href="?refId={substring-after(tei:ref/@target, '#')}"><xsl:value-of select="normalize-space(tei:ref)"/></a>
-            <xsl:if test="position() != last()"><span class="sep"> | </span></xsl:if>
-          </li>
-        </xsl:for-each>
-      </ul>
-      <ul id="days-list">
-        <xsl:for-each select="tei:list[@type = 'days']/tei:item">
-          <xsl:sort select="tei:ref/@n"/>
-          <li>
-            <xsl:if test="tei:ref/@ana = 'selected'"><xsl:attribute name="class">selected</xsl:attribute></xsl:if>
-            <a href="?refId={substring-after(tei:ref/@target, '#')}">
-              <xsl:call-template name="date-ordinal">
-                <xsl:with-param name="texte" select="normalize-space(replace(tei:ref, '^.*,', ''))"/>
-              </xsl:call-template>
-            </a>
-            <xsl:if test="position() != last()"><span class="sep"> | </span></xsl:if>
-          </li>
-        </xsl:for-each>
-      </ul>
-      <ul id="mins-list">
-        <xsl:for-each select="tei:list[@type = 'minutes']/tei:item">
-          <li>
-            <xsl:if test="tei:ref/@ana = 'selected'"><xsl:attribute name="class">selected</xsl:attribute></xsl:if>
-            <xsl:if test="tei:ref/@type = 'next'"><span class="sep"> &gt;&gt; </span></xsl:if>
-            <a href="?refId={substring-after(tei:ref/@target, '#')}"><xsl:value-of select="normalize-space(tei:ref)"/></a>
-            <xsl:choose>
-              <xsl:when test="tei:ref/@type = 'previous'"><span class="sep"> &lt;&lt; </span></xsl:when>
-              <xsl:when test="tei:ref/@type = 'next'"/>
-              <xsl:when test="following-sibling::tei:item[1]/tei:ref/@type = 'minute'"><span class="sep"> | </span></xsl:when>
-            </xsl:choose>
-          </li>
-        </xsl:for-each>
-      </ul>
-    </nav>
-  </xsl:template>
 
   <!-- ================================================================
        Index des types d'actes — ÉLEC index-des-types-d-actes.html
