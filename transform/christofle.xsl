@@ -104,25 +104,6 @@
     </section>
   </xsl:template>
 
-  <!-- ================================================================
-       Introduction (ÉLEC introduction/partie-N.html : section#content.paratext)
-       La page « Introduction » (servie sans ses parties) rend la première partie,
-       comme le menu de l'ÉLEC, qui menait à partie-1.html.
-       ================================================================ -->
-  <xsl:template match="tei:div[tei:argument[@ana = '#intro-index']]">
-    <xsl:variable name="arg" select="tei:argument[@ana = '#intro-index']"/>
-    <xsl:variable name="partie" select="$arg/tei:floatingText[@type = 'first-part']/tei:body"/>
-    <section id="content" class="paratext">
-      <!-- 2026-10-27 : plus de liste des parties ici (intro-menu) : la TOC de dots-vue suffit. -->
-      <section>
-        <article>
-          <h1 class="head"><xsl:value-of select="normalize-space($partie/tei:head)"/></h1>
-          <xsl:apply-templates select="$partie/node()[not(self::tei:head)]"/>
-        </article>
-      </section>
-    </section>
-  </xsl:template>
-
   <!-- Une partie de l'introduction servie seule (r515, r527…). -->
   <xsl:template match="tei:div[@xml:id = ('r515', 'r527', 'r658', 'r1153', 'r1288')]">
     <section id="content" class="paratext">
@@ -140,24 +121,14 @@
     </section>
   </xsl:template>
 
-  <!-- 2026-10-19 : « Édition des notes » (r1609) : la liste des mois et des jours de l'ÉLEC est retirée ;
-       la page garde le sommaire de DoTS (décision de Maxime). -->
-  <xsl:template match="tei:group[tei:argument[@ana = '#notes-index']]">
-    <h1 class="head"><xsl:value-of select="(normalize-space(tei:head[1])[. != ''], 'Édition des notes')[1]"/></h1>
-  </xsl:template>
-
   <!-- ================================================================
        Note (minute) — ÉLEC notes/note-NNN.html
        ================================================================ -->
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]">
-    <!-- 2026-10-19 : barres de navigation de l'ÉLEC (mois, jours, minutes voisines) retirées : sommaire et flèches de dots-vue -->
-    <section id="content" class="mins">
-      <section id="facsimile" class="col">
-        <xsl:apply-templates select="tei:body//tei:pb[@facs]" mode="facsimile"/>
-      </section>
-      <section id="text">
-        <section id="edition">
-          <article id="edition-text">
+    <!-- 2026-10-19 : barres de navigation de l'ÉLEC (mois, jours, minutes voisines) retirées : sommaire et flèches de dots-vue.
+         2026-11-23 : colonnes de l'ÉLEC retirées (fac-similé flottant à 28 %, texte réduit à 65 % du reste : 437 px sur 980) :
+         en-tête, vignettes des folios, texte sur toute la largeur, notes. -->
+    <article class="christofle-minute">
             <!-- 2026-10-19 : en-tête au modèle de hteiml (comme les actes des autres corpus) : n°, date, analyse -->
             <header class="front">
               <div class="docNum"><xsl:value-of select="tei:front/tei:docTitle/tei:titlePart[@type = 'number']"/></div>
@@ -165,6 +136,8 @@
                 <time datetime="{tei:front/tei:docDate/tei:date/@when}">
                   <xsl:call-template name="date-ordinal"><xsl:with-param name="texte" select="normalize-space(tei:front/tei:docDate/tei:date)"/></xsl:call-template>
                 </time>
+                <!-- Appel de note porté par la date (minute 55) : perdu par le texte seul ci-dessus. -->
+                <xsl:apply-templates select="tei:front/tei:docDate//tei:ref[@type = 'note']"/>
               </span>
               <div class="argument">
                 <p>
@@ -176,11 +149,15 @@
                 </p>
               </div>
             </header>
-            <div><xsl:apply-templates select="tei:body/tei:div/node()"/></div>
-          </article>
-        </section>
-      </section>
-    </section>
+            <!-- Vignettes des folios, en attendant le dépôt des images (Nakala) et la visionneuse de dots-vue. -->
+            <xsl:if test="tei:body//tei:pb[@facs]">
+              <div class="christofle-facsimiles">
+                <xsl:apply-templates select="tei:body//tei:pb[@facs]" mode="facsimile"/>
+              </div>
+            </xsl:if>
+            <div class="christofle-texte"><xsl:apply-templates select="tei:body/tei:div/node()"/></div>
+            <xsl:call-template name="chr:notes-de-la-minute"/>
+    </article>
   </xsl:template>
 
 
@@ -230,23 +207,34 @@
     <xsl:apply-templates/>
   </xsl:template>
 
-  <!-- Appel de note d'apparat : la note s'affiche à côté au survol (ou au
-       focus), comme displayApparatusNote() de l'ÉLEC, mais en CSS. -->
+  <!-- 2026-11-23 : notes au modèle de hteiml (retour de Philippe), au lieu de la bulle de l'ÉLEC.
+       Le TEI sépare l'appel (<ref type="note" target="#…-n-NN">) et la note (<back>/<div type="notes">) :
+       hteiml ferait pointer l'appel sur lui-même, d'où ce modèle. Lien a.noteref → note du pied
+       (classe « note », même id) : c'est ce que lisent les notes en marge de dots-vue. -->
   <xsl:template match="tei:ref[@type = 'note']">
-    <xsl:variable name="note" select="key('note-par-id', substring-after(@target, '#'))[1]"/>
-    <span class="noteAnchor" tabindex="0" id="{@xml:id}"><sup><xsl:value-of select="@n"/></sup></span>
-    <xsl:if test="$note">
-      <span class="apparatusNote"><xsl:value-of select="@n"/>. <xsl:apply-templates select="$note/node()" mode="note-en-ligne"/></span>
+    <!-- Quelques appels sans @n (minute 99…) : numéro de la note appelée. -->
+    <xsl:variable name="n" select="(@n, key('note-par-id', substring-after(@target, '#'))/@n)[1]"/>
+    <a class="noteref" href="#{substring-after(@target, '#')}" id="{@xml:id}"><sup><xsl:value-of select="$n"/></sup></a>
+  </xsl:template>
+
+  <!-- Pied de la minute : une note par appel, avec le lien de retour vers l'appel. -->
+  <xsl:template name="chr:notes-de-la-minute">
+    <xsl:variable name="notes" select="tei:back/tei:div[@type = 'notes']/tei:note[@xml:id]"/>
+    <xsl:if test="$notes">
+      <section class="footnotes">
+        <xsl:for-each select="$notes">
+          <div class="note" id="{@xml:id}">
+            <!-- Note sans appel (minute 98, appel retiré le 04/10) : numéro sans lien de retour. -->
+            <xsl:choose>
+              <xsl:when test="@target"><a class="noteback" href="#{substring-after(@target, '#')}"><xsl:value-of select="@n"/>.</a></xsl:when>
+              <xsl:otherwise><span class="noteback"><xsl:value-of select="@n"/>.</span></xsl:otherwise>
+            </xsl:choose>
+            <xsl:text> </xsl:text>
+            <xsl:apply-templates select="if (tei:p) then tei:p/node() else node()"/>
+          </div>
+        </xsl:for-each>
+      </section>
     </xsl:if>
-  </xsl:template>
-
-  <!-- Le <p> d'une note devient du texte au fil dans la bulle. -->
-  <xsl:template match="tei:p" mode="note-en-ligne">
-    <xsl:apply-templates/>
-  </xsl:template>
-
-  <xsl:template match="node()" mode="note-en-ligne">
-    <xsl:apply-templates select="."/>
   </xsl:template>
 
   <!-- ==== 3. PROPRE AU PROJET ==== -->
@@ -255,92 +243,35 @@
     <img src="../../images/christofle/{substring-after(@url, 'images/')}" alt="{normalize-space(../tei:figDesc)}"/>
   </xsl:template>
 
-  <!-- ================================================================
-       Page d'un mois : filtre par jour sans JavaScript (boutons radio et CSS), repris
-       tel quel de la feuille précédente (christofle-month-index).
-       ================================================================ -->
-  <xsl:template match="tei:group[tei:argument[@ana = '#month-index']]">
-    <xsl:call-template name="christofle-month-index">
-      <xsl:with-param name="month" select="tei:argument[@ana = '#month-index']"/>
-    </xsl:call-template>
-  </xsl:template>
-
-  <!-- Index d'un mois : filtre par jour sans JS.
-       $month est ici <argument type="month-index"> et contient une liste
-       précalculée de toutes les minutes du mois. -->
-  <xsl:template name="christofle-month-index">
-    <xsl:param name="month"/>
-    <xsl:variable name="mid" select="substring-after($month/@corresp, '#')"/>
-    <xsl:variable name="minutes" select="$month/tei:list/tei:item"/>
-    <section class="christofle-mois" id="{$mid}">
-      <h2 class="mois-head"><xsl:value-of select="normalize-space($month/tei:head)"/></h2>
-      <p class="mois-intro"><xsl:value-of select="count($minutes)"/> actes. Filtrez par jour ou cliquez un acte pour le consulter.</p>
-
-      <input type="radio" name="jf-{$mid}" id="jf-{$mid}-all" class="jf-radio" checked="checked"/>
-
-      <nav class="jours-nav" aria-label="Filtrer par jour">
-        <span class="jours-label">Jours :</span>
-        <label class="jour-link jour-all" for="jf-{$mid}-all">Tous</label>
-        <!-- 2026-09-29 : jours dans l'ordre des dates (voir la barre des jours
-             des minutes) ; le premier de chaque jour reste choisi dans l'ordre
-             du document (preceding-sibling), le tri ne joue que sur l'affichage. -->
-        <xsl:for-each select="$minutes">
-          <xsl:sort select="tei:date/@when"/>
-          <xsl:variable name="when" select="tei:date/@when"/>
-          <xsl:if test="not(preceding-sibling::tei:item[tei:date/@when = $when])">
-            <label class="jour-link" for="jf-{$mid}-{$when}" title="{normalize-space(tei:date)}">
-              <xsl:value-of select="number(substring($when, 9))"/>
-            </label>
-          </xsl:if>
-        </xsl:for-each>
-      </nav>
-
-      <div class="jours-index">
-        <xsl:for-each select="$minutes">
-          <xsl:sort select="tei:date/@when"/>
-          <xsl:variable name="when" select="tei:date/@when"/>
-          <xsl:if test="not(preceding-sibling::tei:item[tei:date/@when = $when])">
-            <section class="jour-group jg-{$when}" id="jour-{$when}">
-              <input type="radio" name="jf-{$mid}" id="jf-{$mid}-{$when}" class="jf-radio"/>
-              <h3 class="jour-head"><xsl:value-of select="normalize-space(tei:date)"/></h3>
-              <xsl:for-each select="$minutes[tei:date/@when = $when]">
-                <div class="jour-note">
-                  <a class="internalLink note-link" href="?refId={substring-after(tei:ref/@target, '#')}">
-                    <span class="note-num"><xsl:value-of select="tei:ref"/>.</span>
-                    <xsl:text> </xsl:text>
-                    <xsl:variable name="nature" select="normalize-space(tei:term[@type = 'natureJuridique'][1])"/>
-                    <xsl:if test="$nature != ''">
-                      <span class="note-type"><xsl:value-of select="$nature"/></span>
-                      <xsl:text> — </xsl:text>
-                    </xsl:if>
-                    <span class="note-summary"><xsl:value-of select="normalize-space(tei:seg[@type = 'summary'])"/></span>
-                  </a>
-                </div>
-              </xsl:for-each>
-            </section>
-          </xsl:if>
-        </xsl:for-each>
-      </div>
-    </section>
-  </xsl:template>
-
   <!-- Folio dans le texte : « [76 r°] » (crochets posés par la CSS .pb). -->
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:pb">
     <span class="pb"><xsl:value-of select="chr:folio(@n)"/></span>
   </xsl:template>
 
-  <!-- Colonne des fac-similés : un folio par <pb>. La vignette s'ouvre en grand
-       sans script (<details>). -->
+  <!-- Vignette d'un folio : une par <pb>. Elle s'ouvre en grand
+       sans script (<details>). 2026-11-23 : @facs = URL IIIF Nakala (…/full/max/0/default.jpg) ; la vignette est
+       demandée au même serveur en 400 px de large (taille des anciennes _ptt). Chemin local images/sources/ encore lu. -->
   <xsl:template match="tei:pb" mode="facsimile">
     <xsl:variable name="fichier" select="substring-after(@facs, 'images/sources/')"/>
+    <xsl:variable name="grande">
+      <xsl:choose>
+        <xsl:when test="starts-with(@facs, 'https://')"><xsl:value-of select="@facs"/></xsl:when>
+        <xsl:otherwise>../../images/christofle/sources/<xsl:value-of select="$fichier"/></xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
+    <xsl:variable name="vignette">
+      <xsl:choose>
+        <xsl:when test="starts-with(@facs, 'https://')"><xsl:value-of select="substring-before(@facs, '/full/max/')"/>/full/400,/0/default.jpg</xsl:when>
+        <xsl:otherwise>../../images/christofle/vignettes/<xsl:value-of select="substring-before($fichier, '.jpg')"/>_ptt.jpg</xsl:otherwise>
+      </xsl:choose>
+    </xsl:variable>
     <figure>
       <details>
         <summary>
           <span class="pageUrl">Fol. <xsl:value-of select="chr:folio(@n)"/></span>
-          <img class="vignette" src="../../images/christofle/vignettes/{substring-before($fichier, '.jpg')}_ptt.jpg"
-               alt="Fac-similé du folio {chr:folio(@n)}"/>
+          <img class="vignette" src="{$vignette}" alt="Fac-similé du folio {chr:folio(@n)}"/>
         </summary>
-        <img class="grande" src="../../images/christofle/sources/{$fichier}" alt="Fac-similé du folio {chr:folio(@n)}" loading="lazy"/>
+        <img class="grande" src="{$grande}" alt="Fac-similé du folio {chr:folio(@n)}" loading="lazy"/>
       </details>
       <figcaption>Archives départementales du Loiret, 3E 10144, fol. <xsl:value-of select="chr:folio(@n)"/></figcaption>
     </figure>
