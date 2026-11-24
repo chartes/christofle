@@ -9,8 +9,10 @@
      tf-* (module tableau-filtrable.xsl, préfixe chr-) dont le comportement vit dans
      christofle.customJs.js (collectionCustomJs).
 
-     Pages : accueil, introduction, édition des notes (sommaire des mois), mois, note
-     (minute), index des types d'actes, index des lieux et personnes. -->
+     Pages : introduction (trois parties, rendues par hteiml), édition des notes (sommaire des mois), mois,
+     note (minute), index des types d'actes, index des lieux et personnes.
+     2026-11-24 (relecture de Maxime) : accueil, folios (chr:folio), ordinaux (date-ordinal), enveloppe DoTS, liens
+     de téléchargement, vers les anciennes pages et l'ancien site retirés : hteiml ou le TEI s'en chargent. -->
 <xsl:transform version="3.0"
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns="http://www.w3.org/1999/xhtml"
@@ -48,16 +50,6 @@
     <xsl:sequence select="concat(upper-case(substring($t, 1, 1)), substring($t, 2))"/>
   </xsl:function>
 
-  <!-- Folio : @n « 76 » ou « 82v » → « 76 r° », « 82 v° ». -->
-  <xsl:function name="chr:folio" as="xs:string">
-    <xsl:param name="n"/>
-    <xsl:variable name="n" select="normalize-space($n)"/>
-    <xsl:variable name="fin" select="substring($n, string-length($n))"/>
-    <xsl:sequence select="if ($fin = ('r', 'v'))
-                          then concat(substring($n, 1, string-length($n) - 1), ' ', $fin, '°')
-                          else concat($n, ' r°')"/>
-  </xsl:function>
-
   <!-- Vedette en texte simple (tri, suggestions) ; sous-entrée : « Lieu › sous-entrée ». -->
   <xsl:function name="chr:vedette" as="xs:string" version="3.0">
     <xsl:param name="e" as="element()"/>
@@ -73,54 +65,6 @@
 
   <!-- ==== 1. HISTORIQUE : surcharge reprise de la feuille de l'ÉLEC (rendu du texte de l'édition) ==== -->
 
-  <!-- « 1er juin » → 1<sup>er</sup> juin, comme l'ÉLEC. -->
-  <xsl:template name="date-ordinal">
-    <xsl:param name="texte"/>
-    <xsl:analyze-string select="$texte" regex="(^|\s)1er(\s|$)">
-      <xsl:matching-substring><xsl:value-of select="regex-group(1)"/>1<sup>er</sup><xsl:value-of select="regex-group(2)"/></xsl:matching-substring>
-      <xsl:non-matching-substring><xsl:value-of select="."/></xsl:non-matching-substring>
-    </xsl:analyze-string>
-  </xsl:template>
-
-  <!-- ================================================================
-       Accueil (ÉLEC index.html : section#content.titlePage)
-       ================================================================ -->
-  <xsl:template match="tei:div[@type = 'homePageAbstract']">
-    <section id="content" class="titlePage">
-      <xsl:for-each select="tei:figure[@type = 'homeImage']">
-        <section id="image">
-          <figure>
-            <img src="../../images/christofle/{substring-after(tei:graphic/@url, 'images/')}"
-                 alt="{normalize-space(tei:figDesc)}"/>
-            <figcaption><xsl:apply-templates select="tei:figDesc/node()"/></figcaption>
-          </figure>
-        </section>
-      </xsl:for-each>
-      <section id="titlePage">
-        <article>
-          <div><xsl:apply-templates select="tei:p"/></div>
-        </article>
-      </section>
-    </section>
-  </xsl:template>
-
-  <!-- Une partie de l'introduction servie seule (r515, r527…). -->
-  <xsl:template match="tei:div[@xml:id = ('r515', 'r527', 'r658', 'r1153', 'r1288')]">
-    <section id="content" class="paratext">
-      <section>
-        <article>
-          <h1 class="head"><xsl:value-of select="normalize-space(tei:head)"/></h1>
-          <xsl:apply-templates select="node()[not(self::tei:head)]"/>
-          <!-- 2026-10-27 : corps des notes de la partie (hteiml ne les sort que pour tei:text) :
-               sans lui, l'appel de note pointe vers un id absent. -->
-          <xsl:call-template name="footnotes">
-            <xsl:with-param name="cont" select="."/>
-          </xsl:call-template>
-        </article>
-      </section>
-    </section>
-  </xsl:template>
-
   <!-- ================================================================
        Note (minute) — ÉLEC notes/note-NNN.html
        ================================================================ -->
@@ -133,11 +77,8 @@
             <header class="front">
               <div class="docNum"><xsl:value-of select="tei:front/tei:docTitle/tei:titlePart[@type = 'number']"/></div>
               <span class="docDate">
-                <time datetime="{tei:front/tei:docDate/tei:date/@when}">
-                  <xsl:call-template name="date-ordinal"><xsl:with-param name="texte" select="normalize-space(tei:front/tei:docDate/tei:date)"/></xsl:call-template>
-                </time>
-                <!-- Appel de note porté par la date (minute 55) : perdu par le texte seul ci-dessus. -->
-                <xsl:apply-templates select="tei:front/tei:docDate//tei:ref[@type = 'note']"/>
+                <!-- 2026-11-24 : contenu de la date tel que dans le TEI (« 1<hi rend="sup">er</hi> », appel de note de la minute 55). -->
+                <time datetime="{tei:front/tei:docDate/tei:date/@when}"><xsl:apply-templates select="tei:front/tei:docDate/tei:date/node()"/></time>
               </span>
               <div class="argument">
                 <p>
@@ -150,7 +91,8 @@
               </div>
             </header>
             <div class="christofle-texte"><xsl:apply-templates select="tei:body/tei:div/node()"/></div>
-            <xsl:call-template name="chr:notes-de-la-minute"/>
+            <!-- 2026-11-24 : pied de notes de hteiml (notes de back/div[@type='notes'], regroupées par folio). -->
+            <xsl:call-template name="footnotes"><xsl:with-param name="cont" select="."/></xsl:call-template>
     </article>
   </xsl:template>
 
@@ -178,7 +120,7 @@
                       <a title="Consulter la minute" class="internalLink" href="?refId={substring-after(tei:ref/@target, '#')}"><xsl:value-of select="tei:ref"/></a>
                       <span class="chr-type-date">
                         <xsl:text> — </xsl:text>
-                        <xsl:call-template name="date-ordinal"><xsl:with-param name="texte" select="normalize-space(tei:date)"/></xsl:call-template>
+                        <xsl:apply-templates select="tei:date/node()"/>
                       </span>
                     </li>
                   </xsl:for-each>
@@ -193,11 +135,10 @@
 
   <!-- ==== 2. BLOCS HTEIML GÉNÉRIQUES : enveloppe dts:wrapper, notes, apparat critique, bibliographie (listBibl) ==== -->
 
-  <!-- ================================================================
-       Enveloppe DoTS
-       hteiml ne connaît pas <dts:wrapper> et l'affiche en rouge : on le traverse.
-       ================================================================ -->
-  <xsl:template match="*[local-name() = 'wrapper']">
+  <!-- 2026-11-24 : enveloppe DoTS traversée par hteiml (dts:wrapper), qui ajoute le pied de notes d'un fragment sans
+       tei:text (parties de l'introduction). Sauf pour l'index des lieux et personnes : ses 221 notes de relation
+       (« ép. de Perrin Ragys »), déjà dans le tableau, y sortiraient en pied, avec des liens de retour morts. -->
+  <xsl:template match="*[local-name() = 'wrapper'][tei:div[@type = 'indexes']]" priority="21">
     <xsl:apply-templates/>
   </xsl:template>
 
@@ -211,38 +152,10 @@
     <a class="noteref" href="#{substring-after(@target, '#')}" id="{@xml:id}"><sup><xsl:value-of select="$n"/></sup></a>
   </xsl:template>
 
-  <!-- Pied de la minute : une note par appel, avec le lien de retour vers l'appel. -->
-  <xsl:template name="chr:notes-de-la-minute">
-    <xsl:variable name="notes" select="tei:back/tei:div[@type = 'notes']/tei:note[@xml:id]"/>
-    <xsl:if test="$notes">
-      <section class="footnotes">
-        <xsl:for-each select="$notes">
-          <div class="note" id="{@xml:id}">
-            <!-- Note sans appel (minute 98, appel retiré le 04/10) : numéro sans lien de retour. -->
-            <xsl:choose>
-              <xsl:when test="@target"><a class="noteback" href="#{substring-after(@target, '#')}"><xsl:value-of select="@n"/>.</a></xsl:when>
-              <xsl:otherwise><span class="noteback"><xsl:value-of select="@n"/>.</span></xsl:otherwise>
-            </xsl:choose>
-            <xsl:text> </xsl:text>
-            <xsl:apply-templates select="if (tei:p) then tei:p/node() else node()"/>
-          </div>
-        </xsl:for-each>
-      </section>
-    </xsl:if>
-  </xsl:template>
-
   <!-- ==== 3. PROPRE AU PROJET ==== -->
 
   <xsl:template match="tei:graphic">
     <img src="../../images/christofle/{substring-after(@url, 'images/')}" alt="{normalize-space(../tei:figDesc)}"/>
-  </xsl:template>
-
-  <!-- Folio dans le texte : « [76 r°] » (crochets posés par la CSS .pb).
-       2026-11-23 : précédé du lien IIIF de l'image (a.pb), que dots-vue remplace par sa vignette
-       (visionneuse Mirador) grâce au manifeste déclaré en sourceDesc/@facs (dots:resourceIIIFManifest). -->
-  <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:pb">
-    <xsl:if test="starts-with(@facs, 'https://')"><a class="pb" href="{@facs}"/></xsl:if>
-    <span class="pb"><xsl:value-of select="chr:folio(@n)"/></span>
   </xsl:template>
 
   <!-- Ajout marginal : « Dans la marge gauche : a. » ; 2026-10-30 : aussi les ajouts qui n'ont qu'une mention (25 <add n>
@@ -469,26 +382,6 @@
 
   <!-- ==== 4. MÉCANISMES COMMUNS : tableau filtrable (tf-*), liens vers l'ancien site (D5), liens internes entre fragments ==== -->
 
-  <!-- Lien de téléchargement (partie « Télécharger ») : le TEI servi par DoTS. -->
-  <xsl:template match="tei:ref[starts-with(@target, 'telechargement')]" priority="12">
-    <a class="externalLink" download="christofle_1437.xml"
-       href="https://dots.chartes.psl.eu/api/dts/document?resource=christofle_1437&amp;mediaType=xml">
-      <xsl:apply-templates/>
-    </a>
-  </xsl:template>
-
-  <!-- Liens de l'introduction vers d'anciennes pages .html de l'ÉLEC. -->
-  <xsl:template match="tei:ref[@type = 'internalLink'][contains(@target, '.html')]" priority="12">
-    <xsl:choose>
-      <xsl:when test="@target = 'partie-4.html'"><a class="internalLink" href="?refId=r1153"><xsl:apply-templates/></a></xsl:when>
-      <xsl:otherwise><xsl:apply-templates/></xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-
-  <xsl:template match="tei:ref[starts-with(@target, 'http')]" priority="11">
-    <a class="externalLink" href="{@target}" target="_blank" rel="noopener"><xsl:apply-templates/></a>
-  </xsl:template>
-
   <!-- Nom lié à l'index : lien vers l'entrée, dans la page de l'index.
        L'infobulle est la vedette de l'index (@n), comme l'ÉLEC. -->
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//(tei:persName | tei:placeName | tei:orgName)[@ref]">
@@ -606,17 +499,5 @@
       </xsl:if>
   </xsl:template>
 
-  <!-- 2026-11-05 (Maxime : « l'ancien site va être désactivé ») : anciens sites (*.enc.sorbonne.fr) fermés, plus aucun
-       lien vers eux ; le texte reste. Les réécritures vers dots-vue de cette feuille (priorité plus forte) passent avant. -->
-  <xsl:template match="tei:ref[matches(@target, '^https?://([a-z0-9-]+\.)*enc\.sorbonne\.fr')]
-                       | tei:ptr[matches(@target, '^https?://([a-z0-9-]+\.)*enc\.sorbonne\.fr')]" mode="#all" version="3.0" priority="11.5">
-    <xsl:choose>
-      <xsl:when test="normalize-space(.) != '' or *"><xsl:apply-templates mode="#current"/></xsl:when>
-      <xsl:otherwise><xsl:value-of select="@target"/></xsl:otherwise>
-    </xsl:choose>
-  </xsl:template>
-  <xsl:template match="tei:idno[matches(normalize-space(.), '^https?://([a-z0-9-]+\.)*enc\.sorbonne\.fr')]" mode="#all" version="3.0" priority="1">
-    <span class="idno"><xsl:value-of select="normalize-space(.)"/></span>
-  </xsl:template>
 
 </xsl:transform>

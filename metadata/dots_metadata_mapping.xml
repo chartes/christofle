@@ -16,6 +16,7 @@
     <dots:shortTitle scope="collection" source="./collection.tsv" value="short_title"/>
     <dcat:accessURL scope="collection" source="./collection.tsv" value="id" prefix="https://data.chartes.psl.eu/api/dts/collection?id="/>
     <dct:title scope="document" xpath="/TEI/teiHeader/fileDesc/titleStmt/title[1]"/>
+    <dots:shortTitle scope="document" xpath="/TEI/teiHeader/fileDesc/titleStmt/title[@type='short']"/>
     <dct:language scope="document" xpath="/TEI/teiHeader/profileDesc/langUsage/language/tokenize(@ident)"/>
     <dct:contributor scope="document" xpath="/TEI/teiHeader/fileDesc/titleStmt/principal | /TEI/teiHeader/fileDesc/titleStmt/editor"/>
     <dct:source scope="document" xpath="for $ms in /TEI/teiHeader/fileDesc/sourceDesc/msDesc/msIdentifier return concat($ms/settlement, ', ', $ms/repository, ', ', $ms/idno)"/>
