@@ -138,7 +138,7 @@
             <idno type="URI">http://elec.enc.sorbonne.fr/</idno>
             <idno type="vol">n° 27 dans la série des éditions électroniques</idno>
          </seriesStmt>
-         <sourceDesc>
+         <sourceDesc facs="https://christofle-0cf4c9.gitpages.huma-num.fr/manifests/christofle_1437.json">
             <msDesc xml:id="AD45-3E10144">
                <msIdentifier>
                   <country>France</country>
@@ -176,8 +176,7 @@
                </citeStructure>
             </citeStructure>
             <citeStructure match="/TEI[1]/text[1]/back[1]/div[@type='indexes']" use="@xml:id" unit="indexLieuxPersonnes">
-               <citeData property="dct:title" use="'Index des lieux et personnes'"/>
-            <citeStructure match="div[@type='lettre']" use="@xml:id" unit="lettre"><citeData property="dct:title" use="normalize-space(concat('Lettre ', head[1]))"/><citeStructure match="listPerson/person | listPerson/org | listPlace/place" use="@xml:id" unit="entrée"><citeData property="dct:title" use="let $rel := normalize-space(string-join(note[@type='relation'], ' ')) let $lib := string-join(placeName ! string-join(node() ! (if (self::term) then concat(normalize-space(.), ' ') else if (self::addName) then concat(', ', normalize-space(.)) else string(.)), ''), ' / ') let $base :=   if (persName) then     let $p := persName[1] return     if ($p/surname[normalize-space()]) then       concat(         string-join(distinct-values(persName/surname[normalize-space()] ! normalize-space(.)), ' / '),         if ($p/forename[normalize-space()])         then concat(', ', normalize-space($p/forename[1]),                     if ($p/nameLink[normalize-space()]) then concat(' ', normalize-space($p/nameLink[1])) else '')         else '',         if ($p/roleName[normalize-space()]) then concat(', ', normalize-space($p/roleName[1])) else '',         if ($p/addName[normalize-space()]) then concat(', dit ', normalize-space($p/addName[1])) else '')     else if ($p/name[normalize-space()]) then normalize-space($p/name[1])     else concat(normalize-space($p/forename[1]),         if ($p/roleName[normalize-space()]) then concat(', ', normalize-space($p/roleName[1])) else '',         if ($p/addName[normalize-space()]) then concat(', dit ', normalize-space($p/addName[1])) else '')   else if (orgName) then string-join(orgName ! normalize-space(.), ' / ')   else concat(normalize-space($lib),         if (location/*) then concat(' [ ', string-join(location/* ! normalize-space(.), ', '), ' ]') else '') return normalize-space(translate(concat($base, if ($rel ne '') then concat(', ', $rel) else ''), codepoints-to-string(160), ' '))"/><citeStructure match="place" use="@xml:id" unit="sous-entrée"><citeData property="dct:title" use="let $lib := function($n) { string-join($n/placeName/node() ! (if (self::term) then concat(normalize-space(.), ' ') else string(.)), '') } return normalize-space(translate(concat(normalize-space($lib(..)), ' — ', normalize-space($lib(.)),   if (location/*) then concat(' [ ', string-join(location/* ! normalize-space(.), ', '), ' ]') else ''), codepoints-to-string(160), ' '))"/></citeStructure></citeStructure></citeStructure></citeStructure>
+               <citeData property="dct:title" use="'Index des lieux et personnes'"/></citeStructure>
          <citeStructure match="/TEI[1]/text[1]/back[1]/div[@type='index-types-actes']" use="@xml:id" unit="indexTypesActes"><citeData property="dct:title" use="normalize-space(head[1])"/></citeStructure></refsDecl>
       </encodingDesc>
       <profileDesc>
@@ -230,6 +229,7 @@
          <change when="2026-10-04">Noms indexés des minutes : la vedette de l'index (forme que l'ÉLEC affichait en infobulle) est écrite en @n sur les 6 220 persName, placeName et orgName liés, pour que la feuille n'ait plus à relire le TEI complet.</change>
          <change when="2026-10-05">minute-098 : la note d'apparat ne vise plus l'ancre #minute-098-a-01, retirée le 04/10 avec l'appel ajouté à la migration (son lien de retour menait nulle part).</change>
          <change when="2026-11-23">Les 401 &lt;argument&gt; ajoutés à la migration pour reproduire la navigation de l'ÉLEC (sommaire de l'introduction, liste des mois et des jours, filtre par jour des mois, navigation entre minutes) sont retirés : le sommaire de dots-vue les remplace.</change>
+         <change when="2026-11-23">citeStructure : niveaux « lettre », « entrée » et « sous-entrée » de l’index des lieux et personnes retirés (sommaire de dots-vue sans les lettres A, B, C ni les entrées ; l’index reste un tableau unique sur une seule page, les entrées y sont visées par ancre).</change>
       </revisionDesc>
    </teiHeader>
    <text>

@@ -127,7 +127,7 @@
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]">
     <!-- 2026-10-19 : barres de navigation de l'ÉLEC (mois, jours, minutes voisines) retirées : sommaire et flèches de dots-vue.
          2026-11-23 : colonnes de l'ÉLEC retirées (fac-similé flottant à 28 %, texte réduit à 65 % du reste : 437 px sur 980) :
-         en-tête, vignettes des folios, texte sur toute la largeur, notes. -->
+         en-tête, texte sur toute la largeur (vignettes des folios : celles de dots-vue, en marge, depuis le manifeste IIIF), notes. -->
     <article class="christofle-minute">
             <!-- 2026-10-19 : en-tête au modèle de hteiml (comme les actes des autres corpus) : n°, date, analyse -->
             <header class="front">
@@ -149,12 +149,6 @@
                 </p>
               </div>
             </header>
-            <!-- Vignettes des folios, en attendant le dépôt des images (Nakala) et la visionneuse de dots-vue. -->
-            <xsl:if test="tei:body//tei:pb[@facs]">
-              <div class="christofle-facsimiles">
-                <xsl:apply-templates select="tei:body//tei:pb[@facs]" mode="facsimile"/>
-              </div>
-            </xsl:if>
             <div class="christofle-texte"><xsl:apply-templates select="tei:body/tei:div/node()"/></div>
             <xsl:call-template name="chr:notes-de-la-minute"/>
     </article>
@@ -243,38 +237,12 @@
     <img src="../../images/christofle/{substring-after(@url, 'images/')}" alt="{normalize-space(../tei:figDesc)}"/>
   </xsl:template>
 
-  <!-- Folio dans le texte : « [76 r°] » (crochets posés par la CSS .pb). -->
+  <!-- Folio dans le texte : « [76 r°] » (crochets posés par la CSS .pb).
+       2026-11-23 : précédé du lien IIIF de l'image (a.pb), que dots-vue remplace par sa vignette
+       (visionneuse Mirador) grâce au manifeste déclaré en sourceDesc/@facs (dots:resourceIIIFManifest). -->
   <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:pb">
+    <xsl:if test="starts-with(@facs, 'https://')"><a class="pb" href="{@facs}"/></xsl:if>
     <span class="pb"><xsl:value-of select="chr:folio(@n)"/></span>
-  </xsl:template>
-
-  <!-- Vignette d'un folio : une par <pb>. Elle s'ouvre en grand
-       sans script (<details>). 2026-11-23 : @facs = URL IIIF Nakala (…/full/max/0/default.jpg) ; la vignette est
-       demandée au même serveur en 400 px de large (taille des anciennes _ptt). Chemin local images/sources/ encore lu. -->
-  <xsl:template match="tei:pb" mode="facsimile">
-    <xsl:variable name="fichier" select="substring-after(@facs, 'images/sources/')"/>
-    <xsl:variable name="grande">
-      <xsl:choose>
-        <xsl:when test="starts-with(@facs, 'https://')"><xsl:value-of select="@facs"/></xsl:when>
-        <xsl:otherwise>../../images/christofle/sources/<xsl:value-of select="$fichier"/></xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-    <xsl:variable name="vignette">
-      <xsl:choose>
-        <xsl:when test="starts-with(@facs, 'https://')"><xsl:value-of select="substring-before(@facs, '/full/max/')"/>/full/400,/0/default.jpg</xsl:when>
-        <xsl:otherwise>../../images/christofle/vignettes/<xsl:value-of select="substring-before($fichier, '.jpg')"/>_ptt.jpg</xsl:otherwise>
-      </xsl:choose>
-    </xsl:variable>
-    <figure>
-      <details>
-        <summary>
-          <span class="pageUrl">Fol. <xsl:value-of select="chr:folio(@n)"/></span>
-          <img class="vignette" src="{$vignette}" alt="Fac-similé du folio {chr:folio(@n)}"/>
-        </summary>
-        <img class="grande" src="{$grande}" alt="Fac-similé du folio {chr:folio(@n)}" loading="lazy"/>
-      </details>
-      <figcaption>Archives départementales du Loiret, 3E 10144, fol. <xsl:value-of select="chr:folio(@n)"/></figcaption>
-    </figure>
   </xsl:template>
 
   <!-- Ajout marginal : « Dans la marge gauche : a. » ; 2026-10-30 : aussi les ajouts qui n'ont qu'une mention (25 <add n>
