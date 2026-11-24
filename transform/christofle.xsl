@@ -135,6 +135,21 @@
 
   <!-- ==== 2. BLOCS HTEIML GÉNÉRIQUES : enveloppe dts:wrapper, notes, apparat critique, bibliographie (listBibl) ==== -->
 
+  <!-- 2026-11-24 : repère de folio « f. 78 », « f. 82v » (hteiml écrit « {p. 78} » et « p. 78 ») : dans le texte de la
+       minute, précédé du lien IIIF de l'image quand le TEI en déclare une (a.pb, que dots-vue remplace par sa vignette). -->
+  <xsl:template match="tei:text[starts-with(@xml:id, 'minute-')]//tei:pb">
+    <xsl:if test="starts-with(@facs, 'https://')"><a class="pb" href="{@facs}"/></xsl:if>
+    <span class="pb">f. <xsl:value-of select="normalize-space(@n)"/></span>
+  </xsl:template>
+
+  <!-- Même repère dans le pied de notes de la minute (lien vers le folio). -->
+  <xsl:template match="tei:pb[ancestor::tei:text[starts-with(@xml:id, 'minute-')]]" mode="a">
+    <a>
+      <xsl:attribute name="href"><xsl:call-template name="href"/></xsl:attribute>
+      <xsl:text>f. </xsl:text><xsl:value-of select="normalize-space(@n)"/>
+    </a>
+  </xsl:template>
+
   <!-- 2026-11-24 : enveloppe DoTS traversée par hteiml (dts:wrapper), qui ajoute le pied de notes d'un fragment sans
        tei:text (parties de l'introduction). Sauf pour l'index des lieux et personnes : ses 221 notes de relation
        (« ép. de Perrin Ragys »), déjà dans le tableau, y sortiraient en pied, avec des liens de retour morts. -->
